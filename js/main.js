@@ -136,7 +136,7 @@ const Main = {
         const today = Utils.todayStr();
         document.getElementById('todayLabel').textContent = Utils.formatJP(today);
 
-        const period = storage.getActivePeriod(today);
+        const targets = storage.getTodayTargets(today);
         const periodLabel = document.getElementById('periodLabel');
         const entries = storage.getLogsForDate(today);
         const totals = storage.sumLogs(entries);
@@ -144,20 +144,21 @@ const Main = {
         document.getElementById('kcalNum').textContent = Math.round(totals.kcal);
 
         const pfcLine = document.getElementById('pfcLine');
-        if (!period) {
+        if (!targets) {
             periodLabel.textContent = 'スケジュール未設定（設定 > 増減量スケジュール）';
             document.getElementById('kcalGoal').textContent = '';
             pfcLine.innerHTML = '';
         } else {
-            periodLabel.textContent = `目標 ${period.kcal}kcal`;
-            const remainKcal = Math.round(period.kcal - totals.kcal);
+            const dayTypeLabel = targets.dayType === 'rest' ? '休み日' : 'トレ日';
+            periodLabel.textContent = `${dayTypeLabel}の目標 ${targets.kcal}kcal`;
+            const remainKcal = Math.round(targets.kcal - totals.kcal);
             document.getElementById('kcalGoal').textContent =
                 remainKcal >= 0 ? `残り ${remainKcal}kcal` : `${-remainKcal}kcal 超過`;
 
             const macros = [
-                { key: 'p', label: 'P', goal: period.p, val: totals.p },
-                { key: 'f', label: 'F', goal: period.f, val: totals.f },
-                { key: 'c', label: 'C', goal: period.c, val: totals.c }
+                { key: 'p', label: 'P', goal: targets.p, val: totals.p },
+                { key: 'f', label: 'F', goal: targets.f, val: totals.f },
+                { key: 'c', label: 'C', goal: targets.c, val: totals.c }
             ];
             pfcLine.innerHTML = '<span>PFC</span>' + macros.map(m => {
                 const diff = Utils.round1(m.goal - m.val);

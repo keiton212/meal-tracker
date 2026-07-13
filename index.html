@@ -148,11 +148,7 @@
                 <div class="form-row">
                     <div class="form-field small">
                         <label>単位</label>
-                        <select id="foodUnitInput">
-                            <option value="g">g</option>
-                            <option value="個">個</option>
-                            <option value="杯">杯</option>
-                        </select>
+                        <input type="text" id="foodUnitInput" value="g" placeholder="g/個/杯/ml/本など">
                     </div>
                     <div class="form-field small"><label>基準量</label><input type="number" id="foodBaseInput" value="100"></div>
                 </div>
@@ -186,13 +182,23 @@
                     <div class="form-field"><label>開始日</label><input type="date" id="periodStartInput"></div>
                     <div class="form-field"><label>終了日</label><input type="date" id="periodEndInput"></div>
                 </div>
+                <div class="section-label" style="margin-top:12px;">トレ日の目標（日〜土のうち休み日以外）</div>
                 <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="number" id="periodKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="number" id="periodPInput"></div>
+                    <div class="form-field"><label>kcal</label><input type="number" id="periodTrainKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="number" id="periodTrainPInput"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="number" id="periodFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="number" id="periodCInput"></div>
+                    <div class="form-field"><label>F (g)</label><input type="number" id="periodTrainFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="number" id="periodTrainCInput"></div>
+                </div>
+                <div class="section-label" style="margin-top:12px;">休み日の目標（日曜・木曜）</div>
+                <div class="form-row">
+                    <div class="form-field"><label>kcal</label><input type="number" id="periodRestKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="number" id="periodRestPInput"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field"><label>F (g)</label><input type="number" id="periodRestFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="number" id="periodRestCInput"></div>
                 </div>
                 <button class="btn-block" id="addPeriodBtn">追加する</button>
             </div>

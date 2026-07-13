@@ -72,7 +72,9 @@ const Graph = {
         const dates = this.lastNDates(7);
         const logs = storage.getLogs();
         const totals = { p: 0, f: 0, c: 0 };
+        const goalTotals = { p: 0, f: 0, c: 0 };
         let daysWithData = 0;
+        let daysWithGoal = 0;
 
         dates.forEach(d => {
             const entries = logs[d] || [];
@@ -81,22 +83,28 @@ const Graph = {
                 const sum = storage.sumLogs(entries);
                 totals.p += sum.p; totals.f += sum.f; totals.c += sum.c;
             }
+            const targets = storage.getTodayTargets(d);
+            if (targets) {
+                daysWithGoal++;
+                goalTotals.p += targets.p; goalTotals.f += targets.f; goalTotals.c += targets.c;
+            }
         });
 
-        const period = storage.getActivePeriod();
         const div = daysWithData || 1;
         const avg = { p: totals.p / div, f: totals.f / div, c: totals.c / div };
+        const goalDiv = daysWithGoal || 1;
+        const avgGoal = { p: goalTotals.p / goalDiv, f: goalTotals.f / goalDiv, c: goalTotals.c / goalDiv };
 
         const container = document.getElementById('pfcAvgBars');
-        if (!period) {
+        if (!daysWithGoal) {
             container.innerHTML = '<div class="empty-hint">スケジュールが未設定です</div>';
             return;
         }
 
         const rows = [
-            { label: 'P', val: avg.p, goal: period.p },
-            { label: 'F', val: avg.f, goal: period.f },
-            { label: 'C', val: avg.c, goal: period.c }
+            { label: 'P', val: avg.p, goal: avgGoal.p },
+            { label: 'F', val: avg.f, goal: avgGoal.f },
+            { label: 'C', val: avg.c, goal: avgGoal.c }
         ];
         container.innerHTML = rows.map(r => {
             const pct = Math.min(100, Math.round((r.val / r.goal) * 100));
@@ -105,7 +113,7 @@ const Graph = {
                 <div class="macro-bar-row">
                     <div class="macro-label">${r.label}</div>
                     <div class="bar-track"><div class="bar-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
-                    <div class="macro-val">${Utils.round1(r.val)}/${r.goal}g</div>
+                    <div class="macro-val">${Utils.round1(r.val)}/${Utils.round1(r.goal)}g</div>
                 </div>`;
         }).join('');
     },
