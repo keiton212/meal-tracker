@@ -47,8 +47,8 @@ const Nav = {
         // 次のフレームでtransitionを有効にして初めて動かす（2段rAFが最も確実）
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                current.style.transition = 'transform .3s ease';
-                target.style.transition = 'transform .3s ease';
+                current.style.transition = 'transform .16s cubic-bezier(0.22, 0.61, 0.36, 1)';
+                target.style.transition = 'transform .16s cubic-bezier(0.22, 0.61, 0.36, 1)';
                 current.style.transform = `translateX(${-dir * 100}%)`;
                 target.style.transform = 'translateX(0)';
             });
