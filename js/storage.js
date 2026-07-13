@@ -16,7 +16,7 @@ const SEED_FOODS = [
     { id: 'f6', name: 'バナナ', aliases: [], unit: 'g', baseAmount: 100, kcal: 93, p: 1.1, f: 0.2, c: 22.5 },
     { id: 'f7', name: '森永 高たんぱく牛乳', aliases: ['高たんぱく牛乳'], unit: 'ml', baseAmount: 200, kcal: 104, p: 10.3, f: 0.3, c: 15.1 },
     { id: 'f8', name: 'オレンジジュース', aliases: [], unit: 'ml', baseAmount: 200, kcal: 94, p: 1.7, f: 0, c: 22.2 },
-    { id: 'f9', name: 'ソイプロテイン（INNOCECT）', aliases: ['ソイプロテイン', 'INNOCECT'], unit: 'g', baseAmount: 30, kcal: 112, p: 21.1, f: 0.7, c: 7.2 },
+    { id: 'f9', name: 'ソイプロテイン（INNOCECT）', aliases: ['ソイプロテイン', 'INNOCECT'], unit: '杯', baseAmount: 1, kcal: 112, p: 21.1, f: 0.7, c: 7.2 },
     { id: 'f10', name: 'ザバスヨーグルト', aliases: ['ザバス ヨーグルト'], unit: '個', baseAmount: 1, kcal: 85, p: 15, f: 0, c: 6.4 },
     { id: 'f11', name: 'オイコス マンゴー', aliases: ['オイコス'], unit: 'g', baseAmount: 113, kcal: 85, p: 10.1, f: 0, c: 0 },
     { id: 'f12', name: '味の素 プロテイン唐揚げ', aliases: ['プロテイン唐揚げ'], unit: 'g', baseAmount: 180, kcal: 239, p: 31.7, f: 5.75, c: 15.1 },
@@ -81,14 +81,26 @@ class Storage {
     // 過去に間違った初期値で登録された食品の一回限りの修正
     runOneTimeFixes() {
         const FIX_KEY = 'meal_fix_onigiri_v2';
-        if (localStorage.getItem(FIX_KEY)) return;
-        const foods = this.getFoods();
-        const onigiri = foods.find(f => f.name === 'おにぎり');
-        if (onigiri) {
-            Object.assign(onigiri, { kcal: 186, p: 2.6, f: 1.1, c: 41.7 });
-            this.setFoods(foods);
+        if (!localStorage.getItem(FIX_KEY)) {
+            const foods = this.getFoods();
+            const onigiri = foods.find(f => f.name === 'おにぎり');
+            if (onigiri) {
+                Object.assign(onigiri, { kcal: 186, p: 2.6, f: 1.1, c: 41.7 });
+                this.setFoods(foods);
+            }
+            localStorage.setItem(FIX_KEY, '1');
         }
-        localStorage.setItem(FIX_KEY, '1');
+
+        const SOY_FIX_KEY = 'meal_fix_soyprotein_unit_v1';
+        if (!localStorage.getItem(SOY_FIX_KEY)) {
+            const foods = this.getFoods();
+            const soy = foods.find(f => f.name === 'ソイプロテイン（INNOCECT）');
+            if (soy) {
+                Object.assign(soy, { unit: '杯', baseAmount: 1 });
+                this.setFoods(foods);
+            }
+            localStorage.setItem(SOY_FIX_KEY, '1');
+        }
     }
 
     // ---------- 食品マスタ ----------

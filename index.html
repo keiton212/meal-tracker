@@ -62,12 +62,27 @@
         </div>
         <div class="content">
             <div class="card">
-                <div class="section-label">1行で入力（固定順）</div>
+                <div class="section-label">1行で入力（品名・カロリー・PFC）</div>
                 <div class="paste-box">
-                    順番は固定：<b>品名,量,単位,kcal,P,F,C</b><br>
-                    例）コンビニ チーズケーキ,100,g,310,6,21,24
+                    <b>品名, カロリー, P, F, C</b> の順で入力（カンマ・読点・スペースどれで区切ってもOK）<br>
+                    例）コンビニ チーズケーキ 310 6 21 24
                 </div>
-                <input type="text" id="oneLineInput" class="text-input" placeholder="品名,量,単位,kcal,P,F,C">
+                <input type="text" id="oneLineInput" class="text-input" placeholder="品名 カロリー P F C">
+            </div>
+            <div class="card">
+                <div class="section-label">この数値は何あたりの表示？</div>
+                <label class="radio-row">
+                    <input type="radio" name="foodBasis" id="basis100g" value="100g" checked>
+                    <span>100gあたり（実際に食べた量を下で入力）</span>
+                </label>
+                <label class="radio-row">
+                    <input type="radio" name="foodBasis" id="basisPiece" value="piece">
+                    <span>1つあたり（そのまま1つ分を記録）</span>
+                </label>
+                <div id="basisAmountRow" class="form-field" style="margin-top:10px;">
+                    <label>実際に食べた量 (g)</label>
+                    <input type="number" id="basisAmountInput" value="100">
+                </div>
             </div>
             <label class="check-row">
                 <input type="checkbox" id="saveAsMasterCheck">

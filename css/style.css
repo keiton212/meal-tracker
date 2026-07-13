@@ -45,6 +45,11 @@ button, input, select, textarea {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
+/* FABが最後のログ行の×ボタンに重なって押せなくなるのを防ぐ */
+#homeScreen {
+    padding-bottom: calc(180px + env(safe-area-inset-bottom));
+}
+
 .screen.active {
     display: block;
 }
@@ -181,6 +186,11 @@ button, input, select, textarea {
 }
 .check-row input { margin-top: 2px; accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
 .check-row b { color: var(--ink); }
+
+.radio-row {
+    display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); padding: 8px 2px;
+}
+.radio-row input { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
 
 .log-row {
     display: flex; justify-content: space-between; align-items: center; padding: 8px 2px;

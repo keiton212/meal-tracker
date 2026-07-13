@@ -14,21 +14,30 @@ const Main = {
         });
     },
 
-    // 1行を "品名 数量単位"（スペース区切り）または "品名,数量,単位"（カンマ区切り）どちらでも解釈する
-    parseLine(line) {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
+    UNIT_WORDS: ['g', 'グラム', '個', '杯', '枚', '本', '玉', '食', 'ml', 'cc'],
 
-        if (trimmed.includes(',')) {
-            const parts = trimmed.split(',').map(p => p.trim());
-            const amount = parseFloat(parts[1]);
-            if (!parts[0] || Number.isNaN(amount)) return null;
-            return { name: parts[0], amount };
+    // 1行を「品名 + 数量」として解釈する。区切りはカンマ（全角/半角）・読点・空白のどれでもよい。
+    // 例: "鶏むね肉 200g" / "鶏むね肉,200,g" / "鶏むね肉、200" / "森永 高たんぱく牛乳 200ml"
+    parseLine(line) {
+        const tokens = line.trim().split(/[,、,\s]+/).filter(Boolean);
+        if (tokens.length < 2) return null;
+
+        const last = tokens[tokens.length - 1];
+        let amountToken, nameTokens;
+
+        if (this.UNIT_WORDS.includes(last) && tokens.length >= 3 && !Number.isNaN(parseFloat(tokens[tokens.length - 2]))) {
+            amountToken = tokens[tokens.length - 2];
+            nameTokens = tokens.slice(0, -2);
+        } else {
+            const m = last.match(/^([\d.]+)(g|グラム|個|杯|枚|本|玉|食|ml|cc)?$/);
+            if (!m) return null;
+            amountToken = m[1];
+            nameTokens = tokens.slice(0, -1);
         }
 
-        const m = trimmed.match(/^(.+?)\s*([\d.]+)\s*(g|グラム|個|杯|枚|本|玉|食|ml|cc)?\s*$/);
-        if (!m) return null;
-        return { name: m[1].trim(), amount: parseFloat(m[2]) };
+        const amount = parseFloat(amountToken);
+        if (Number.isNaN(amount) || !nameTokens.length) return null;
+        return { name: nameTokens.join(' '), amount };
     },
 
     addFoodLog(food, amount) {
