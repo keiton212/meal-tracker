@@ -53,8 +53,6 @@ const Main = {
 
         if (!prefix) {
             container.innerHTML = '';
-            // 新しい品目の入力に戻ったので、通常のキーボードに戻す
-            textarea.setAttribute('inputmode', 'text');
             return;
         }
 
@@ -86,8 +84,6 @@ const Main = {
                 }
                 textarea.focus();
                 container.innerHTML = '';
-                // 次は数量を打つはずなので、数字入力用のキーボードに切り替える
-                textarea.setAttribute('inputmode', 'decimal');
             };
             // pointerdownの時点でpreventDefaultし、textareaからフォーカスが外れる前に確定させる
             // （clickだけに頼ると、環境によってキーボードが一旦閉じてしまうことがあるため）
@@ -152,7 +148,6 @@ const Main = {
         entries.forEach(({ food, amount }) => this.addFoodLog(food, amount));
 
         textarea.value = '';
-        textarea.setAttribute('inputmode', 'text');
         document.getElementById('quickAddSuggestions').innerHTML = '';
         this.renderToday();
 
