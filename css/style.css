@@ -150,16 +150,29 @@ button, input, select, textarea {
 }
 .btn-block.secondary { background: var(--bg); color: var(--accent); border: 1px solid var(--accent); }
 
+.quick-row-wrap { border-bottom: 1px solid var(--line); }
+.quick-row-wrap:last-child { border-bottom: none; }
 .quick-row {
     display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 2px;
-    border-bottom: 1px solid var(--line); cursor: pointer;
 }
-.quick-row:last-child { border-bottom: none; }
+.quick-row-main { cursor: pointer; flex: 1; }
 .food-name { font-weight: 600; font-size: 13px; }
 .food-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
 .quick-btn {
     flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft);
     border: 1px solid rgba(60,110,71,.35); border-radius: 100px; padding: 7px 11px; white-space: nowrap;
+}
+.quick-edit-panel {
+    display: flex; align-items: center; gap: 8px; padding: 0 2px 10px;
+}
+.quick-edit-panel input {
+    flex: 1; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 14px;
+    background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.quick-edit-panel input:focus { outline: none; border-color: var(--accent); }
+.quick-edit-confirm {
+    flex-shrink: 0; background: var(--accent); color: #fff; border: none; border-radius: 9px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700;
 }
 
 .paste-textarea {

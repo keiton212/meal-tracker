@@ -101,31 +101,55 @@ const Main = {
             const amount = lastAmount || food.baseAmount;
             const n = storage.calcNutrients(food, amount);
             return `
-                <div class="quick-row" data-food-id="${food.id}" data-amount="${amount}">
-                    <div>
-                        <div class="food-name">${food.name}</div>
-                        <div class="food-meta">${amount}${food.unit}あたり P${n.p} F${n.f} C${n.c} · ${n.kcal}kcal</div>
+                <div class="quick-row-wrap">
+                    <div class="quick-row">
+                        <div class="quick-row-main" data-food-id="${food.id}">
+                            <div class="food-name">${food.name}</div>
+                            <div class="food-meta">${amount}${food.unit}あたり P${n.p} F${n.f} C${n.c} · ${n.kcal}kcal</div>
+                        </div>
+                        <button class="quick-btn" data-food-id="${food.id}" data-amount="${amount}">${amount}${food.unit}追加する</button>
                     </div>
-                    <button class="quick-btn" data-food-id="${food.id}" data-amount="${amount}">${amount}${food.unit}追加する</button>
+                    <div class="quick-edit-panel" data-food-id="${food.id}" style="display:none;">
+                        <input type="number" class="quick-edit-input" value="${amount}">
+                        <span class="unit-label">${food.unit}</span>
+                        <button class="quick-edit-confirm" data-food-id="${food.id}">追加</button>
+                    </div>
                 </div>`;
         }).join('');
 
-        const addFromRow = el => {
-            const food = storage.getFoods().find(f => f.id === el.dataset.foodId);
+        const addFood = (foodId, amount) => {
+            const food = storage.getFoods().find(f => f.id === foodId);
             if (!food) return;
-            this.addFoodLog(food, parseFloat(el.dataset.amount));
+            this.addFoodLog(food, amount);
             this.renderToday();
         };
 
-        // 行全体（品名・数量のテキスト部分）をタップしてもボタンと同じ動作にする
-        list.querySelectorAll('.quick-row').forEach(row => {
-            row.addEventListener('click', e => {
-                if (e.target.closest('.quick-btn')) return; // ボタン自身のクリックは下のハンドラに任せる
-                addFromRow(row);
+        // ボタン：表示中の量でそのまま即追加
+        list.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', () => addFood(btn.dataset.foodId, parseFloat(btn.dataset.amount)));
+        });
+
+        // 行のテキスト部分：数量を変更できる入力欄を展開
+        list.querySelectorAll('.quick-row-main').forEach(row => {
+            row.addEventListener('click', () => {
+                const panel = list.querySelector(`.quick-edit-panel[data-food-id="${row.dataset.foodId}"]`);
+                if (!panel) return;
+                const isOpen = panel.style.display !== 'none';
+                list.querySelectorAll('.quick-edit-panel').forEach(p => p.style.display = 'none');
+                if (!isOpen) {
+                    panel.style.display = 'flex';
+                    panel.querySelector('.quick-edit-input').focus();
+                }
             });
         });
-        list.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.addEventListener('click', () => addFromRow(btn));
+
+        list.querySelectorAll('.quick-edit-confirm').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.quick-edit-panel');
+                const amount = parseFloat(panel.querySelector('.quick-edit-input').value);
+                if (Number.isNaN(amount)) return;
+                addFood(btn.dataset.foodId, amount);
+            });
         });
     },
 
