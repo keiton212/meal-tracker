@@ -109,8 +109,8 @@ const Main = {
                         </div>
                         <button class="quick-btn" data-food-id="${food.id}" data-amount="${amount}">${amount}${food.unit}追加する</button>
                     </div>
-                    <div class="quick-edit-panel" data-food-id="${food.id}" style="display:none;">
-                        <input type="text" inputmode="decimal" class="quick-edit-input" value="${amount}">
+                    <div class="quick-edit-panel" data-food-id="${food.id}" data-default-amount="${amount}" style="display:none;">
+                        <input type="text" inputmode="decimal" class="quick-edit-input" placeholder="${amount}">
                         <span class="unit-label">${food.unit}</span>
                         <button class="quick-edit-confirm" data-food-id="${food.id}">追加</button>
                     </div>
@@ -139,8 +139,8 @@ const Main = {
                 if (!isOpen) {
                     panel.style.display = 'flex';
                     const input = panel.querySelector('.quick-edit-input');
+                    input.value = ''; // 前回の値は表示せず空欄から入力できるようにする（前回値はplaceholderで薄く表示）
                     input.focus();
-                    input.select(); // 前回の値を選択状態にし、そのまま打ち始めれば上書きできるようにする
                 }
             });
         });
@@ -148,7 +148,9 @@ const Main = {
         list.querySelectorAll('.quick-edit-confirm').forEach(btn => {
             btn.addEventListener('click', () => {
                 const panel = btn.closest('.quick-edit-panel');
-                const amount = parseFloat(panel.querySelector('.quick-edit-input').value);
+                const inputVal = panel.querySelector('.quick-edit-input').value.trim();
+                // 空欄のまま追加した場合は、表示されていた前回量（プレースホルダー）を使う
+                const amount = inputVal ? parseFloat(inputVal) : parseFloat(panel.dataset.defaultAmount);
                 if (Number.isNaN(amount)) return;
                 addFood(btn.dataset.foodId, amount);
             });

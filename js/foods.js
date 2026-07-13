@@ -2,38 +2,12 @@ const Foods = {
     editingId: null,
 
     init() {
-        document.getElementById('addFoodMasterBtn').addEventListener('click', () => this.add());
         document.addEventListener('screen:show', e => {
             if (e.detail.screenId === 'foodsScreen') {
                 this.editingId = null;
                 this.render();
             }
         });
-    },
-
-    add() {
-        const name = document.getElementById('foodNameInput').value.trim();
-        const aliasRaw = document.getElementById('foodAliasInput').value.trim();
-        const unit = document.getElementById('foodUnitInput').value;
-        const baseAmount = parseFloat(document.getElementById('foodBaseInput').value);
-        const kcal = parseFloat(document.getElementById('foodKcalInput').value);
-        const p = parseFloat(document.getElementById('foodPInput').value);
-        const f = parseFloat(document.getElementById('foodFInput').value);
-        const c = parseFloat(document.getElementById('foodCInput').value);
-
-        if (!name || [baseAmount, kcal, p, f, c].some(Number.isNaN)) {
-            alert('品名と数値項目をすべて入力してください。');
-            return;
-        }
-
-        const aliases = aliasRaw ? aliasRaw.split(',').map(a => a.trim()).filter(Boolean) : [];
-        storage.addFood({ name, aliases, unit, baseAmount, kcal, p, f, c });
-
-        ['foodNameInput', 'foodAliasInput', 'foodKcalInput', 'foodPInput', 'foodFInput', 'foodCInput']
-            .forEach(id => document.getElementById(id).value = '');
-        document.getElementById('foodBaseInput').value = 100;
-
-        this.render();
     },
 
     render() {
@@ -94,15 +68,15 @@ const Foods = {
                 <div class="form-field"><label>別名（カンマ区切り）</label><input type="text" class="e-alias" value="${aliasStr}"></div>
                 <div class="form-row">
                     <div class="form-field small"><label>単位</label><input type="text" class="e-unit" value="${f.unit}"></div>
-                    <div class="form-field small"><label>基準量</label><input type="number" class="e-base" value="${f.baseAmount}"></div>
+                    <div class="form-field small"><label>基準量</label><input type="text" inputmode="decimal" class="e-base" value="${f.baseAmount}"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="number" class="e-kcal" value="${f.kcal}"></div>
-                    <div class="form-field"><label>P (g)</label><input type="number" class="e-p" value="${f.p}"></div>
+                    <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" class="e-kcal" value="${f.kcal}"></div>
+                    <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" class="e-p" value="${f.p}"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="number" class="e-f" value="${f.f}"></div>
-                    <div class="form-field"><label>C (g)</label><input type="number" class="e-c" value="${f.c}"></div>
+                    <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" class="e-f" value="${f.f}"></div>
+                    <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" class="e-c" value="${f.c}"></div>
                 </div>
                 <div class="form-row">
                     <button class="btn-block edit-save" data-id="${f.id}" style="margin-top:10px;">保存</button>

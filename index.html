@@ -78,7 +78,7 @@
                 </label>
                 <div id="basisAmountRow" class="form-field" style="margin-top:10px;">
                     <label>実際に食べた量 (g)</label>
-                    <input type="number" id="basisAmountInput" value="100">
+                    <input type="text" inputmode="decimal" id="basisAmountInput" value="100">
                 </div>
             </div>
             <label class="check-row">
@@ -148,27 +148,6 @@
         </div>
         <div class="content">
             <div class="card">
-                <div class="section-label">新しい固定食品を登録</div>
-                <div class="form-field"><label>品名</label><input type="text" id="foodNameInput" placeholder="例）鶏むね肉"></div>
-                <div class="form-field"><label>別名（読みゆれ・カンマ区切り）</label><input type="text" id="foodAliasInput" placeholder="例）とりむね肉,鶏胸肉"></div>
-                <div class="form-row">
-                    <div class="form-field small">
-                        <label>単位</label>
-                        <input type="text" id="foodUnitInput" value="g" placeholder="g/個/杯/ml/本など">
-                    </div>
-                    <div class="form-field small"><label>基準量</label><input type="number" id="foodBaseInput" value="100"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="number" id="foodKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="number" id="foodPInput"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="number" id="foodFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="number" id="foodCInput"></div>
-                </div>
-                <button class="btn-block" id="addFoodMasterBtn">登録する</button>
-            </div>
-            <div class="card">
                 <div class="section-label">登録済みの食品</div>
                 <div id="foodsList"></div>
             </div>
@@ -203,21 +182,21 @@
                 </div>
                 <div class="section-label" style="margin-top:12px;">トレ日の目標（休み日以外）</div>
                 <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="number" id="periodTrainKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="number" id="periodTrainPInput"></div>
+                    <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodTrainKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodTrainPInput"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="number" id="periodTrainFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="number" id="periodTrainCInput"></div>
+                    <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodTrainFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodTrainCInput"></div>
                 </div>
                 <div class="section-label" style="margin-top:12px;">休み日の目標</div>
                 <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="number" id="periodRestKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="number" id="periodRestPInput"></div>
+                    <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodRestKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodRestPInput"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="number" id="periodRestFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="number" id="periodRestCInput"></div>
+                    <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodRestFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodRestCInput"></div>
                 </div>
                 <button class="btn-block" id="addPeriodBtn">追加する</button>
             </div>

@@ -23,21 +23,13 @@ const Nav = {
 
     // タブ画面同士は、瞬時の切り替えではなくページがつながっているように滑らかにスライドさせる
     slide(current, target, dir) {
+        if (this._cleanup) this._cleanup(); // 前回のアニメーションが残っていれば片付けておく
+
         target.style.transition = 'none';
         target.style.transform = `translateX(${dir * 100}%)`;
         target.classList.add('active');
         current.style.transition = 'none';
         current.style.transform = 'translateX(0)';
-
-        // 上のtransition:noneを確実に適用させてからアニメーションを開始する
-        target.getBoundingClientRect();
-
-        requestAnimationFrame(() => {
-            current.style.transition = 'transform .28s ease';
-            target.style.transition = 'transform .28s ease';
-            current.style.transform = `translateX(${-dir * 100}%)`;
-            target.style.transform = 'translateX(0)';
-        });
 
         const cleanup = () => {
             current.classList.remove('active');
@@ -45,8 +37,26 @@ const Nav = {
             current.style.transform = '';
             target.style.transition = '';
             target.style.transform = '';
+            target.removeEventListener('transitionend', cleanup);
+            clearTimeout(fallbackTimer);
+            this._cleanup = null;
         };
+        this._cleanup = cleanup;
+
+        // transition:noneの適用をブラウザに1フレーム分確実に描画させてから、
+        // 次のフレームでtransitionを有効にして初めて動かす（2段rAFが最も確実）
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                current.style.transition = 'transform .3s ease';
+                target.style.transition = 'transform .3s ease';
+                current.style.transform = `translateX(${-dir * 100}%)`;
+                target.style.transform = 'translateX(0)';
+            });
+        });
+
         target.addEventListener('transitionend', cleanup, { once: true });
+        // transitionendが何らかの理由で発火しない場合の保険
+        const fallbackTimer = setTimeout(cleanup, 500);
     }
 };
 
