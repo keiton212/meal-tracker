@@ -110,7 +110,7 @@ const Main = {
                         <button class="quick-btn" data-food-id="${food.id}" data-amount="${amount}">${amount}${food.unit}追加する</button>
                     </div>
                     <div class="quick-edit-panel" data-food-id="${food.id}" style="display:none;">
-                        <input type="number" class="quick-edit-input" value="${amount}">
+                        <input type="text" inputmode="decimal" class="quick-edit-input" value="${amount}">
                         <span class="unit-label">${food.unit}</span>
                         <button class="quick-edit-confirm" data-food-id="${food.id}">追加</button>
                     </div>
@@ -138,7 +138,9 @@ const Main = {
                 list.querySelectorAll('.quick-edit-panel').forEach(p => p.style.display = 'none');
                 if (!isOpen) {
                     panel.style.display = 'flex';
-                    panel.querySelector('.quick-edit-input').focus();
+                    const input = panel.querySelector('.quick-edit-input');
+                    input.focus();
+                    input.select(); // 前回の値を選択状態にし、そのまま打ち始めれば上書きできるようにする
                 }
             });
         });
