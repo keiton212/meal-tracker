@@ -11,10 +11,19 @@ const Main = {
         });
 
         const quickAddInput = document.getElementById('quickAddInput');
+        // 候補選択でtextareaの値を書き換えた直後に発火するinputは、候補の再描画を無視する
+        // （無視しないと同じ場所に新しい候補ボタンが再生成され、直後のtouchend/clickが誤ってそれを踏んでしまう）
+        this._suppressAutocomplete = false;
         // 日本語IME（ローマ字入力など）では確定前は input が発火しないことがあるため、
         // input に加えて keyup / compositionupdate / compositionend でも候補を更新する
         ['input', 'keyup', 'compositionupdate', 'compositionend', 'click'].forEach(evt => {
-            quickAddInput.addEventListener(evt, () => this.renderSuggestions());
+            quickAddInput.addEventListener(evt, () => {
+                if (this._suppressAutocomplete) {
+                    this._suppressAutocomplete = false;
+                    return;
+                }
+                this.renderSuggestions();
+            });
         });
         quickAddInput.addEventListener('blur', () => {
             // 候補タップ時にblurが先に発生してしまうため、少し遅らせて消す
@@ -37,6 +46,9 @@ const Main = {
     renderSuggestions() {
         const textarea = document.getElementById('quickAddInput');
         const container = document.getElementById('quickAddSuggestions');
+        // 前回選択時に残っていた無効化状態・保留中のクリア処理をリセットする
+        clearTimeout(this._suggestionClearTimer);
+        container.style.pointerEvents = '';
         const value = textarea.value;
         const cursor = textarea.selectionStart;
         const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
@@ -59,18 +71,35 @@ const Main = {
         // 候補がキーボードの裏に隠れて見えないことがないよう表示位置までスクロールする
         container.scrollIntoView({ block: 'nearest' });
         container.querySelectorAll('.suggestion-chip').forEach(chip => {
-            // mousedownの時点でpreventDefaultし、textareaからフォーカスが外れないようにする
-            // （これをしないとiOSでキーボードが一旦閉じ、タップし直さないと文字入力できなくなる）
-            chip.addEventListener('mousedown', e => e.preventDefault());
-            chip.addEventListener('click', () => {
+            let handled = false;
+            const select = () => {
+                if (handled) return; // pointerdown/clickの二重発火を防ぐ
+                handled = true;
                 const name = chip.dataset.name;
-                const newValue = value.slice(0, lineStart) + name + value.slice(cursor);
-                textarea.value = newValue;
-                const newCursor = lineStart + name.length;
+                // ここで候補一覧を消す（＝レイアウトが動く）と、まだ処理中のタップの
+                // touchend/clickが、詰めて上に来た別のボタン（追加するボタンなど）を
+                // 誤って踏んでしまう。そのためレイアウトは変えず、操作だけ無効化する
+                container.style.pointerEvents = 'none';
+                this._suppressAutocomplete = true;
+                // setRangeTextはvalueを丸ごと入れ替えないため、IME・undo履歴の状態を壊しにくい
+                if (typeof textarea.setRangeText === 'function') {
+                    textarea.setRangeText(name, lineStart, cursor, 'end');
+                } else {
+                    textarea.value = value.slice(0, lineStart) + name + value.slice(cursor);
+                    textarea.setSelectionRange(lineStart + name.length, lineStart + name.length);
+                    this._suppressAutocomplete = false; // valueの直接代入はinputを発火しないため
+                }
                 textarea.focus();
-                textarea.setSelectionRange(newCursor, newCursor);
-                container.innerHTML = '';
-            });
+                // タップの一連の処理（touchend/clickまで）が完全に終わってから見た目を消す
+                this._suggestionClearTimer = setTimeout(() => {
+                    container.innerHTML = '';
+                    container.style.pointerEvents = '';
+                }, 400);
+            };
+            // pointerdownの時点でpreventDefaultし、textareaからフォーカスが外れる前に確定させる
+            // （clickだけに頼ると、環境によってキーボードが一旦閉じてしまうことがあるため）
+            chip.addEventListener('pointerdown', e => { e.preventDefault(); select(); });
+            chip.addEventListener('click', e => { e.preventDefault(); select(); });
         });
     },
 
