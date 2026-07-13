@@ -37,13 +37,24 @@ const ExportSummary = {
         const text = this.buildText();
         try {
             await navigator.clipboard.writeText(text);
-            alert('コピーしました。ChatGPTやClaudeに貼り付けてください。');
         } catch (err) {
             const textarea = document.getElementById('exportPreview');
             textarea.select();
             document.execCommand('copy');
-            alert('コピーしました。ChatGPTやClaudeに貼り付けてください。');
         }
+        this.showCopiedFeedback();
+    },
+
+    // ポップアップで確認を求めず、ボタンの文言を一瞬変えるだけでコピー完了を伝える
+    showCopiedFeedback() {
+        const btn = document.getElementById('copyExportBtn');
+        if (this._resetTimer) clearTimeout(this._resetTimer);
+        const original = btn.dataset.originalLabel || btn.textContent;
+        btn.dataset.originalLabel = original;
+        btn.textContent = '✓ コピーしました';
+        this._resetTimer = setTimeout(() => {
+            btn.textContent = original;
+        }, 1500);
     }
 };
 

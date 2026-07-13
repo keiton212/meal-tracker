@@ -36,7 +36,7 @@
                     <div class="mic" style="margin-top:2px;">●</div>
                     <textarea id="quickAddInput" class="quick-add-textarea" placeholder="例）とりむね肉100g&#10;複数まとめて書く場合は1行に1品&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
                 </div>
-                <div class="paste-box" style="margin-top:8px;">固定食品マスタに登録済みの品名を書くだけでOK。数量は省略でき、その場合は登録時の基準量（例：おにぎりなら1個、鶏むね肉なら100g）で記録されます。区切りはカンマ・読点・空白・なし、どれでもOK。</div>
+                <div class="paste-box" style="margin-top:8px;">固定食品一覧に登録済みの品名を書くだけでOK。数量は省略でき、その場合は登録時の基準量（例：おにぎりなら1個、鶏むね肉なら100g）で記録されます。区切りはカンマ・読点・空白・なし、どれでもOK。</div>
                 <button class="btn-block" id="quickAddBtn">追加する</button>
             </div>
 
@@ -50,7 +50,6 @@
                 <div id="todayLogList"></div>
             </div>
         </div>
-        <div class="fab-label">新しい食品を記録</div>
         <div class="fab" id="openAddFoodBtn">+</div>
     </div>
 
@@ -138,8 +137,8 @@
             <h2>設定</h2>
         </div>
         <div class="content">
-            <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品マスタ</button>
-            <button class="menu-btn" data-nav="scheduleScreen">📅 増減量スケジュール（PFC設定）</button>
+            <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品一覧</button>
+            <button class="menu-btn" data-nav="scheduleScreen">📅 PFC設定</button>
             <button class="menu-btn" data-nav="exportScreen">📋 週次まとめをコピー</button>
         </div>
     </div>
@@ -148,7 +147,7 @@
     <div id="foodsScreen" class="screen">
         <div class="screen-header">
             <button class="btn-back" data-back="settingsScreen">← 戻る</button>
-            <h2>固定食品マスタ</h2>
+            <h2>固定食品一覧</h2>
         </div>
         <div class="content">
             <div class="card">
@@ -179,11 +178,11 @@
         </div>
     </div>
 
-    <!-- 増減量スケジュール -->
+    <!-- PFC設定 -->
     <div id="scheduleScreen" class="screen">
         <div class="screen-header">
             <button class="btn-back" data-back="settingsScreen">← 戻る</button>
-            <h2>増減量スケジュール</h2>
+            <h2>PFC設定</h2>
         </div>
         <div class="content">
             <div class="card">

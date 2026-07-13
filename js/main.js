@@ -86,7 +86,7 @@ const Main = {
                 : (alert(`${entries.length}件追加しました。\n見つからなかった食品：${unmatchedLines.join('、')}\n固定食品でない場合は「新しい食品を記録」から登録してください。`), false);
             if (goOpen) Nav.show('addFoodScreen');
         } else if (!entries.length) {
-            alert('食品が見つかりませんでした。固定食品マスタに登録済みの品名で入力してください。');
+            alert('食品が見つかりませんでした。固定食品一覧に登録済みの品名で入力してください。');
         }
     },
 
