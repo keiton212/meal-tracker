@@ -1,18 +1,58 @@
 const Nav = {
+    tabOrder: [],
+
     show(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         const target = document.getElementById(screenId);
-        if (target) target.classList.add('active');
+        if (!target) return;
+        const current = document.querySelector('.screen.active');
+
+        if (current && current !== target && this.tabOrder.includes(current.id) && this.tabOrder.includes(screenId)) {
+            const dir = this.tabOrder.indexOf(screenId) > this.tabOrder.indexOf(current.id) ? 1 : -1;
+            this.slide(current, target, dir);
+        } else {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            target.classList.add('active');
+        }
 
         document.querySelectorAll('.tab-item').forEach(t => {
             t.classList.toggle('active', t.dataset.nav === screenId);
         });
 
         document.dispatchEvent(new CustomEvent('screen:show', { detail: { screenId } }));
+    },
+
+    // タブ画面同士は、瞬時の切り替えではなくページがつながっているように滑らかにスライドさせる
+    slide(current, target, dir) {
+        target.style.transition = 'none';
+        target.style.transform = `translateX(${dir * 100}%)`;
+        target.classList.add('active');
+        current.style.transition = 'none';
+        current.style.transform = 'translateX(0)';
+
+        // 上のtransition:noneを確実に適用させてからアニメーションを開始する
+        target.getBoundingClientRect();
+
+        requestAnimationFrame(() => {
+            current.style.transition = 'transform .28s ease';
+            target.style.transition = 'transform .28s ease';
+            current.style.transform = `translateX(${-dir * 100}%)`;
+            target.style.transform = 'translateX(0)';
+        });
+
+        const cleanup = () => {
+            current.classList.remove('active');
+            current.style.transition = '';
+            current.style.transform = '';
+            target.style.transition = '';
+            target.style.transform = '';
+        };
+        target.addEventListener('transitionend', cleanup, { once: true });
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    Nav.tabOrder = Array.from(document.querySelectorAll('.tab-item')).map(t => t.dataset.nav);
+
     document.querySelectorAll('[data-nav]').forEach(el => {
         el.addEventListener('click', () => Nav.show(el.dataset.nav));
     });
@@ -22,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('openAddFoodBtn').addEventListener('click', () => Nav.show('addFoodScreen'));
 
     // 下部タブ画面同士は左右スワイプでも切り替えられるようにする
-    const TAB_ORDER = Array.from(document.querySelectorAll('.tab-item')).map(t => t.dataset.nav);
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -40,11 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const activeScreen = document.querySelector('.screen.active');
         if (!activeScreen) return;
-        const idx = TAB_ORDER.indexOf(activeScreen.id);
+        const idx = Nav.tabOrder.indexOf(activeScreen.id);
         if (idx === -1) return; // サブ画面（設定の各詳細画面など）ではスワイプ切り替えしない
 
-        if (dx < 0 && idx < TAB_ORDER.length - 1) Nav.show(TAB_ORDER[idx + 1]);
-        else if (dx > 0 && idx > 0) Nav.show(TAB_ORDER[idx - 1]);
+        if (dx < 0 && idx < Nav.tabOrder.length - 1) Nav.show(Nav.tabOrder[idx + 1]);
+        else if (dx > 0 && idx > 0) Nav.show(Nav.tabOrder[idx - 1]);
     }, { passive: true });
 });
 
