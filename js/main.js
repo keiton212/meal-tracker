@@ -11,11 +11,14 @@ const Main = {
         });
 
         const quickAddInput = document.getElementById('quickAddInput');
-        quickAddInput.addEventListener('input', () => this.renderSuggestions());
-        quickAddInput.addEventListener('click', () => this.renderSuggestions());
+        // 日本語IME（ローマ字入力など）では確定前は input が発火しないことがあるため、
+        // input に加えて keyup / compositionupdate / compositionend でも候補を更新する
+        ['input', 'keyup', 'compositionupdate', 'compositionend', 'click'].forEach(evt => {
+            quickAddInput.addEventListener(evt, () => this.renderSuggestions());
+        });
         quickAddInput.addEventListener('blur', () => {
             // 候補タップ時にblurが先に発生してしまうため、少し遅らせて消す
-            setTimeout(() => { document.getElementById('quickAddSuggestions').innerHTML = ''; }, 150);
+            setTimeout(() => { document.getElementById('quickAddSuggestions').innerHTML = ''; }, 200);
         });
     },
 
@@ -50,7 +53,11 @@ const Main = {
             return;
         }
 
-        container.innerHTML = matches.map(f => `<button type="button" class="suggestion-chip" data-name="${f.name}">${f.name}</button>`).join('');
+        container.innerHTML =
+            '<span class="suggestion-label">候補</span>' +
+            matches.map(f => `<button type="button" class="suggestion-chip" data-name="${f.name}">${f.name}</button>`).join('');
+        // 候補がキーボードの裏に隠れて見えないことがないよう表示位置までスクロールする
+        container.scrollIntoView({ block: 'nearest' });
         container.querySelectorAll('.suggestion-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const name = chip.dataset.name;
