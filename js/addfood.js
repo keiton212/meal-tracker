@@ -56,28 +56,31 @@ const AddFood = {
         // "実際に食べた量" は100gあたり選択時のみ使用。1つあたりの場合は常に1つ分を記録する
         const eatenAmount = isPiece ? 1 : (parseFloat(document.getElementById('basisAmountInput').value) || 100);
 
-        // ここで入力した内容は常に固定食品として登録する（同名の食品があれば値を更新して重複登録を防ぐ）
-        const foodData = {
-            name: parsed.name,
-            unit: basisUnit,
-            baseAmount: isPiece ? 1 : basisAmount,
-            kcal: parsed.kcal,
-            p: parsed.p,
-            f: parsed.f,
-            c: parsed.c
-        };
-        const existing = storage.findFoodByName(parsed.name);
-        let food;
-        if (existing) {
-            storage.updateFood(existing.id, foodData);
-            food = { ...existing, ...foodData };
-        } else {
-            food = storage.addFood({ ...foodData, aliases: [] });
+        const saveAsFixed = document.getElementById('saveAsFixedCheck').checked;
+        let food = null;
+        if (saveAsFixed) {
+            // 固定食品として登録（同名の食品があれば値を更新して重複登録を防ぐ）
+            const foodData = {
+                name: parsed.name,
+                unit: basisUnit,
+                baseAmount: isPiece ? 1 : basisAmount,
+                kcal: parsed.kcal,
+                p: parsed.p,
+                f: parsed.f,
+                c: parsed.c
+            };
+            const existing = storage.findFoodByName(parsed.name);
+            if (existing) {
+                storage.updateFood(existing.id, foodData);
+                food = { ...existing, ...foodData };
+            } else {
+                food = storage.addFood({ ...foodData, aliases: [] });
+            }
         }
 
         const ratio = isPiece ? 1 : (eatenAmount / basisAmount);
         storage.addLogEntry({
-            foodId: food.id,
+            foodId: food ? food.id : null,
             name: parsed.name,
             amount: eatenAmount,
             unit: basisUnit,
@@ -88,6 +91,7 @@ const AddFood = {
         });
 
         input.value = '';
+        document.getElementById('saveAsFixedCheck').checked = true;
         document.getElementById('basis100g').checked = true;
         document.getElementById('basisAmountInput').value = 100;
         this.updateBasisUI();

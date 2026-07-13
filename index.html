@@ -87,7 +87,10 @@
                     <input type="text" inputmode="decimal" id="basisAmountInput" value="100">
                 </div>
             </div>
-            <div class="food-meta" style="padding:0 2px;">この内容は<b>固定食品</b>として登録され、次回から選んで使えるようになります。</div>
+            <label class="check-row">
+                <input type="checkbox" id="saveAsFixedCheck" checked>
+                <span>この内容を<b>固定食品</b>として登録する（次回から選んで使える）</span>
+            </label>
             <button class="btn-block" id="submitOneLineBtn">記録する</button>
         </div>
     </div>

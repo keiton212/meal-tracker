@@ -59,6 +59,9 @@ const Main = {
         // 候補がキーボードの裏に隠れて見えないことがないよう表示位置までスクロールする
         container.scrollIntoView({ block: 'nearest' });
         container.querySelectorAll('.suggestion-chip').forEach(chip => {
+            // mousedownの時点でpreventDefaultし、textareaからフォーカスが外れないようにする
+            // （これをしないとiOSでキーボードが一旦閉じ、タップし直さないと文字入力できなくなる）
+            chip.addEventListener('mousedown', e => e.preventDefault());
             chip.addEventListener('click', () => {
                 const name = chip.dataset.name;
                 const newValue = value.slice(0, lineStart) + name + value.slice(cursor);
