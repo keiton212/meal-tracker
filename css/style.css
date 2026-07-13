@@ -231,6 +231,7 @@ button, input, select, textarea {
 .form-row { display: flex; gap: 8px; margin-top: 8px; }
 .form-row:first-child { margin-top: 0; }
 
+.food-item-tap { cursor: pointer; }
 .food-item, .period-item {
     border: 1px solid var(--line); border-radius: 12px; padding: 11px; display: flex; flex-direction: column;
     gap: 6px; margin-bottom: 8px;

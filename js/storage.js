@@ -21,7 +21,7 @@ const SEED_FOODS = [
     { id: 'f11', name: 'オイコス マンゴー', aliases: ['オイコス'], unit: 'g', baseAmount: 113, kcal: 85, p: 10.1, f: 0, c: 0 },
     { id: 'f12', name: '味の素 プロテイン唐揚げ', aliases: ['プロテイン唐揚げ'], unit: 'g', baseAmount: 180, kcal: 239, p: 31.7, f: 5.75, c: 15.1 },
     { id: 'f13', name: 'ハンバーガー', aliases: [], unit: '個', baseAmount: 1, kcal: 478, p: 21.9, f: 24.7, c: 42.2 },
-    { id: 'f14', name: 'おにぎり', aliases: [], unit: '個', baseAmount: 1, kcal: 223, p: 4.1, f: 4.5, c: 41.9 },
+    { id: 'f14', name: 'おにぎり', aliases: [], unit: '個', baseAmount: 1, kcal: 186, p: 2.6, f: 1.1, c: 41.7 },
     { id: 'f15', name: 'ファミマ焼き鳥 もも塩', aliases: ['焼き鳥もも塩'], unit: '本', baseAmount: 1, kcal: 108, p: 13.5, f: 5.6, c: 1.2 },
     { id: 'f16', name: '一蘭ラーメン', aliases: [], unit: '杯', baseAmount: 1, kcal: 443, p: 16.5, f: 16.3, c: 57.7 },
     { id: 'f17', name: '一蘭 替え玉', aliases: ['替え玉'], unit: '玉', baseAmount: 1, kcal: 236, p: 7.7, f: 0.9, c: 42.8 },
@@ -59,6 +59,7 @@ class Storage {
                 localStorage.setItem(STORAGE_KEYS.FOODS, JSON.stringify([...existing, ...toAdd]));
             }
         }
+        this.runOneTimeFixes();
         if (!localStorage.getItem(STORAGE_KEYS.PERIODS)) {
             localStorage.setItem(STORAGE_KEYS.PERIODS, JSON.stringify(SEED_PERIODS));
         } else {
@@ -75,6 +76,19 @@ class Storage {
         if (!localStorage.getItem(STORAGE_KEYS.WEIGHTS)) {
             localStorage.setItem(STORAGE_KEYS.WEIGHTS, JSON.stringify({}));
         }
+    }
+
+    // 過去に間違った初期値で登録された食品の一回限りの修正（ユーザーの手動編集は上書きしない）
+    runOneTimeFixes() {
+        const FIX_KEY = 'meal_fix_onigiri_v1';
+        if (localStorage.getItem(FIX_KEY)) return;
+        const foods = this.getFoods();
+        const onigiri = foods.find(f => f.name === 'おにぎり');
+        if (onigiri && onigiri.kcal === 223) {
+            Object.assign(onigiri, { kcal: 186, p: 2.6, f: 1.1, c: 41.7 });
+            this.setFoods(foods);
+        }
+        localStorage.setItem(FIX_KEY, '1');
     }
 
     // ---------- 食品マスタ ----------
