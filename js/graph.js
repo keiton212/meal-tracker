@@ -61,7 +61,7 @@ const Graph = {
             options: {
                 responsive: true,
                 scales: {
-                    y: { position: 'left', title: { display: true, text: 'kcal' } },
+                    y: { position: 'left', min: 1500, max: 3000, title: { display: true, text: 'kcal' } },
                     y1: { position: 'right', title: { display: true, text: 'kg' }, grid: { drawOnChartArea: false } }
                 }
             }

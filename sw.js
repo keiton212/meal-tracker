@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-tracker-v5';
+const CACHE_NAME = 'meal-tracker-v6';
 const urlsToCache = [
     './',
     './index.html',
