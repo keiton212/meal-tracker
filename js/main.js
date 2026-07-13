@@ -2,40 +2,13 @@ const Main = {
     init() {
         this.renderToday();
         document.getElementById('quickAddBtn').addEventListener('click', () => this.handleAdd());
-        document.getElementById('quickAddInput').addEventListener('keydown', e => {
-            // Enterで確定、Shift+Enterで改行（複数行入力用）
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.handleAdd();
-            }
-        });
+        // テキストエリアなのでEnterは普通に改行させる（送信は「追加する」ボタンのみ）
         document.addEventListener('screen:show', e => {
             if (e.detail.screenId === 'homeScreen') this.renderToday();
         });
         document.getElementById('kcalNum').addEventListener('click', () => {
-            document.getElementById('todayLogCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('todayLogCard').scrollIntoView({ block: 'start' });
         });
-    },
-
-    // 1行を「品名 + 数量（省略可）」として解釈する。
-    // 区切りはカンマ（全角/半角）・読点・空白のどれでもよく、無くてもよい（例:"鶏むね肉100g"）。
-    // 数量が書かれていない場合（例:"おにぎり"だけ）は amount: null を返し、呼び出し側で食品マスタの基準量を使う。
-    parseLine(line) {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
-
-        const SEP = '[,、,\\s]*';
-        const UNIT = '(?:g|グラム|個|杯|枚|本|玉|食|ml|cc)?';
-        const m = trimmed.match(new RegExp(`^(.+?)${SEP}([\\d]+(?:\\.\\d+)?)${SEP}${UNIT}${SEP}$`));
-        if (m) {
-            const name = m[1].replace(/[,、,\s]+$/, '').trim();
-            if (!name) return null;
-            return { name, amount: parseFloat(m[2]) };
-        }
-
-        // 数量が見つからない場合は品名のみとみなす（数量は後で食品マスタの基準量を使う）
-        const name = trimmed.replace(/[,、,\s]+$/, '').trim();
-        return name ? { name, amount: null } : null;
     },
 
     addFoodLog(food, amount) {
@@ -49,34 +22,71 @@ const Main = {
         });
     },
 
+    // テキスト全体から、登録済みの食品名・別名を辞書として直接検出する。
+    // 区切り文字（空白・改行・カンマ・読点・区切りなし）に依存しないため誤認識が起きにくい。
+    // 各マッチの直後～次のマッチまでの間にある数値をその食品の数量として扱い、数値が無ければ基準量を使う。
+    extractEntries(text) {
+        const foods = storage.getFoods();
+        const termToFood = new Map();
+        foods.forEach(food => {
+            [food.name, ...(food.aliases || [])].forEach(term => {
+                if (term && !termToFood.has(term)) termToFood.set(term, food);
+            });
+        });
+
+        const terms = Array.from(termToFood.keys()).sort((a, b) => b.length - a.length);
+        if (!terms.length) return { entries: [], unmatchedLines: [] };
+
+        const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(terms.map(escape).join('|'), 'g');
+
+        const matches = [];
+        let m;
+        while ((m = pattern.exec(text)) !== null) {
+            matches.push({ index: m.index, end: m.index + m[0].length, food: termToFood.get(m[0]) });
+        }
+
+        const entries = matches.map((match, i) => {
+            const gapEnd = i + 1 < matches.length ? matches[i + 1].index : text.length;
+            const gap = text.slice(match.end, gapEnd);
+            const numMatch = gap.match(/(\d+(?:\.\d+)?)/);
+            const amount = numMatch ? parseFloat(numMatch[1]) : match.food.baseAmount;
+            return { food: match.food, amount };
+        });
+
+        // 食品名のマッチを1つも含まない行は「見つからなかった品目」として拾う
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const unmatchedLines = [];
+        let cursor = 0;
+        lines.forEach(line => {
+            const lineStart = text.indexOf(line, cursor);
+            const lineEnd = lineStart + line.length;
+            cursor = lineEnd;
+            const hasMatch = matches.some(mt => mt.index < lineEnd && mt.end > lineStart);
+            if (!hasMatch) unmatchedLines.push(line);
+        });
+
+        return { entries, unmatchedLines };
+    },
+
     handleAdd() {
         const textarea = document.getElementById('quickAddInput');
-        const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
-        if (!lines.length) return;
+        const text = textarea.value;
+        if (!text.trim()) return;
 
-        const notFound = [];
-        let addedCount = 0;
-        for (const line of lines) {
-            const parsed = this.parseLine(line);
-            if (!parsed) continue;
-            const food = storage.findFoodByName(parsed.name);
-            if (!food) {
-                notFound.push(parsed.name);
-                continue;
-            }
-            const amount = parsed.amount != null ? parsed.amount : food.baseAmount;
-            this.addFoodLog(food, amount);
-            addedCount++;
-        }
+        const { entries, unmatchedLines } = this.extractEntries(text);
+        entries.forEach(({ food, amount }) => this.addFoodLog(food, amount));
 
         textarea.value = '';
         this.renderToday();
 
-        if (notFound.length) {
-            const goOpen = lines.length === 1 && addedCount === 0
-                ? confirm(`「${notFound[0]}」は固定食品に見つかりませんでした。新しい食品を記録する画面を開きますか？`)
-                : (alert(`${addedCount}件追加しました。\n見つからなかった食品：${notFound.join('、')}\n固定食品でない場合は「新しい食品を記録」から登録してください。`), false);
+        if (unmatchedLines.length) {
+            const goOpen = entries.length === 0 && unmatchedLines.length === 1
+                ? confirm(`「${unmatchedLines[0]}」は固定食品に見つかりませんでした。新しい食品を記録する画面を開きますか？`)
+                : (alert(`${entries.length}件追加しました。\n見つからなかった食品：${unmatchedLines.join('、')}\n固定食品でない場合は「新しい食品を記録」から登録してください。`), false);
             if (goOpen) Nav.show('addFoodScreen');
+        } else if (!entries.length) {
+            alert('食品が見つかりませんでした。固定食品マスタに登録済みの品名で入力してください。');
         }
     },
 
