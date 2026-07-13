@@ -33,7 +33,6 @@
             <div class="card">
                 <div class="section-label">固定食品を追加（音声/手入力・複数行OK）</div>
                 <div class="field-row" style="align-items:flex-start;">
-                    <div class="mic" style="margin-top:2px;">●</div>
                     <textarea id="quickAddInput" class="quick-add-textarea" placeholder="例）とりむね肉100g&#10;複数まとめて書く場合は1行に1品&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
                 </div>
                 <div class="paste-box" style="margin-top:8px;">固定食品一覧に登録済みの品名を書くだけでOK。数量は省略でき、その場合は登録時の基準量（例：おにぎりなら1個、鶏むね肉なら100g）で記録されます。区切りはカンマ・読点・空白・なし、どれでもOK。</div>
@@ -186,12 +185,25 @@
         </div>
         <div class="content">
             <div class="card">
+                <div class="section-label">休み日の曜日</div>
+                <div class="day-toggle-row" id="restDayToggles">
+                    <label class="day-toggle"><input type="checkbox" value="0"><span>日</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="1"><span>月</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="2"><span>火</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="3"><span>水</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="4"><span>木</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="5"><span>金</span></label>
+                    <label class="day-toggle"><input type="checkbox" value="6"><span>土</span></label>
+                </div>
+                <div class="food-meta" style="margin-top:6px;">チェックした曜日が「休み日」として扱われます（他の人が使う場合はここを変更してください）</div>
+            </div>
+            <div class="card">
                 <div class="section-label">新しい期間を追加</div>
                 <div class="form-row">
                     <div class="form-field"><label>開始日</label><input type="date" id="periodStartInput"></div>
                     <div class="form-field"><label>終了日</label><input type="date" id="periodEndInput"></div>
                 </div>
-                <div class="section-label" style="margin-top:12px;">トレ日の目標（日〜土のうち休み日以外）</div>
+                <div class="section-label" style="margin-top:12px;">トレ日の目標（休み日以外）</div>
                 <div class="form-row">
                     <div class="form-field"><label>kcal</label><input type="number" id="periodTrainKcalInput"></div>
                     <div class="form-field"><label>P (g)</label><input type="number" id="periodTrainPInput"></div>
@@ -200,7 +212,7 @@
                     <div class="form-field"><label>F (g)</label><input type="number" id="periodTrainFInput"></div>
                     <div class="form-field"><label>C (g)</label><input type="number" id="periodTrainCInput"></div>
                 </div>
-                <div class="section-label" style="margin-top:12px;">休み日の目標（日曜・木曜）</div>
+                <div class="section-label" style="margin-top:12px;">休み日の目標</div>
                 <div class="form-row">
                     <div class="form-field"><label>kcal</label><input type="number" id="periodRestKcalInput"></div>
                     <div class="form-field"><label>P (g)</label><input type="number" id="periodRestPInput"></div>

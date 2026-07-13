@@ -2,11 +2,13 @@ const STORAGE_KEYS = {
     FOODS: 'meal_foods',
     PERIODS: 'meal_periods',
     LOGS: 'meal_logs',
-    WEIGHTS: 'meal_weights'
+    WEIGHTS: 'meal_weights',
+    REST_DAYS: 'meal_rest_days'
 };
 
-// 週の休みトレ日（gym-trackerのメニュー設定と同じ：日曜・木曜が休み）
-const REST_DAYS_OF_WEEK = [0, 4];
+// 休み日の初期値（gym-trackerのメニュー設定と同じ：日曜・木曜が休み）。
+// 他の人が使う場合は曜日が異なることもあるため、PFC設定画面から変更できる。
+const DEFAULT_REST_DAYS_OF_WEEK = [0, 4];
 
 const SEED_FOODS = [
     { id: 'f1', name: '鶏胸肉・皮なし', aliases: ['鶏むね肉', 'とりむね肉', '鶏胸肉', 'とり胸', 'トリムネ肉'], unit: 'g', baseAmount: 100, kcal: 108, p: 23.3, f: 1.5, c: 0 },
@@ -76,6 +78,18 @@ class Storage {
         if (!localStorage.getItem(STORAGE_KEYS.WEIGHTS)) {
             localStorage.setItem(STORAGE_KEYS.WEIGHTS, JSON.stringify({}));
         }
+        if (!localStorage.getItem(STORAGE_KEYS.REST_DAYS)) {
+            localStorage.setItem(STORAGE_KEYS.REST_DAYS, JSON.stringify(DEFAULT_REST_DAYS_OF_WEEK));
+        }
+    }
+
+    // ---------- 休み日の曜日設定 ----------
+    getRestDays() {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.REST_DAYS)) || DEFAULT_REST_DAYS_OF_WEEK;
+    }
+
+    setRestDays(days) {
+        localStorage.setItem(STORAGE_KEYS.REST_DAYS, JSON.stringify(days));
     }
 
     // 過去に間違った初期値で登録された食品の一回限りの修正
@@ -178,10 +192,10 @@ class Storage {
     }
 
     isRestDay(dateStr = Utils.todayStr()) {
-        return REST_DAYS_OF_WEEK.includes(new Date(dateStr).getDay());
+        return this.getRestDays().includes(new Date(dateStr).getDay());
     }
 
-    // その日のトレ日/休み日に応じた目標を返す（休み日=日曜・木曜固定）
+    // その日のトレ日/休み日に応じた目標を返す（休み日の曜日はPFC設定画面で変更可能）
     getTodayTargets(dateStr = Utils.todayStr()) {
         const period = this.getActivePeriod(dateStr);
         if (!period) return null;
