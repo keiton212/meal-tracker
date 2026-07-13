@@ -1,0 +1,25 @@
+{
+    "name": "MealLog - 食事記録アプリ",
+    "short_name": "MealLog",
+    "description": "PFC・カロリー・体重を記録するトレーニー向け食事記録アプリ",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#f4f2ec",
+    "theme_color": "#3c6e47",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233c6e47' width='192' height='192'/><text x='50%25' y='50%25' font-size='120' fill='white' text-anchor='middle' dominant-baseline='middle'>🍗</text></svg>",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%233c6e47' width='512' height='512'/><text x='50%25' y='50%25' font-size='320' fill='white' text-anchor='middle' dominant-baseline='middle'>🍗</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}

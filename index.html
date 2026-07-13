@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="食事記録アプリ">
+    <meta name="theme-color" content="#3c6e47">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MealLog">
+    <title>MealLog - 食事記録</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233c6e47' width='192' height='192'/><text x='50%25' y='50%25' font-size='110' fill='white' text-anchor='middle' dominant-baseline='middle'>🍗</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233c6e47' width='192' height='192'/><text x='50%25' y='50%25' font-size='110' fill='white' text-anchor='middle' dominant-baseline='middle'>🍗</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ① 今日の記録 -->
+    <div id="homeScreen" class="screen active">
+        <div class="topbar">
+            <div class="title" id="todayLabel">今日</div>
+            <div class="sub" id="periodLabel">スケジュール未設定</div>
+        </div>
+        <div class="content">
+            <div class="kcal-hero">
+                <span class="kcal-num" id="kcalNum">0</span><span class="kcal-unit">kcal</span>
+                <span class="kcal-goal" id="kcalGoal"></span>
+            </div>
+            <div class="pfc-line" id="pfcLine"></div>
+
+            <div class="card">
+                <div class="section-label">食品を追加（音声/手入力）</div>
+                <div class="field-row">
+                    <div class="mic">●</div>
+                    <input type="text" id="quickAddInput" placeholder="例）とりむね肉 200g">
+                </div>
+                <button class="btn-block" id="quickAddBtn">追加する</button>
+            </div>
+
+            <div class="card">
+                <div class="section-label">最近使った食品 · ワンタップ追加</div>
+                <div id="recentFoodsList"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-label">コピペで追加（複数行OK）</div>
+                <textarea id="pasteInput" class="paste-textarea" placeholder="品名,量,単位&#10;例）ツナおにぎり,1,個"></textarea>
+                <button class="btn-block secondary" id="pasteAddBtn">まとめて追加</button>
+            </div>
+
+            <div class="card">
+                <div class="section-label">今日の記録</div>
+                <div id="todayLogList"></div>
+            </div>
+        </div>
+        <div class="fab-label">新しい食品を記録</div>
+        <div class="fab" id="openAddFoodBtn">+</div>
+    </div>
+
+    <!-- ①-b 新しい食品を記録 -->
+    <div id="addFoodScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="homeScreen">← 戻る</button>
+            <h2>新しい食品を記録</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">1行で入力（固定順）</div>
+                <div class="paste-box">
+                    順番は固定：<b>品名,量,単位,kcal,P,F,C</b><br>
+                    例）コンビニ チーズケーキ,100,g,310,6,21,24
+                </div>
+                <input type="text" id="oneLineInput" class="text-input" placeholder="品名,量,単位,kcal,P,F,C">
+            </div>
+            <label class="check-row">
+                <input type="checkbox" id="saveAsMasterCheck">
+                <span>この内容を<b>固定値としてマスタ登録</b>する（次回から選んで使える）</span>
+            </label>
+            <button class="btn-block" id="submitOneLineBtn">記録する</button>
+        </div>
+    </div>
+
+    <!-- ③ 推移グラフ -->
+    <div id="graphScreen" class="screen">
+        <div class="screen-header">
+            <h2>推移</h2>
+        </div>
+        <div class="content">
+            <div class="chart-wrap">
+                <div class="chart-title">カロリー / 体重（直近14日）</div>
+                <canvas id="trendChart" height="160"></canvas>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-title">PFC平均達成率（直近7日）</div>
+                <div class="macro-bars" id="pfcAvgBars"></div>
+            </div>
+            <div class="stat-grid" id="statGrid"></div>
+        </div>
+    </div>
+
+    <!-- ④ 体重記録 -->
+    <div id="weightScreen" class="screen">
+        <div class="screen-header">
+            <h2>体重</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">今日の体重</div>
+                <div class="field-row">
+                    <div class="mic">●</div>
+                    <input type="number" id="weightInput" step="0.1" placeholder="例）68.2">
+                    <span class="unit-label">kg</span>
+                </div>
+                <button class="btn-block" id="saveWeightBtn">記録する</button>
+            </div>
+            <div class="card">
+                <div class="section-label">履歴</div>
+                <div id="weightHistoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⑤ 設定ハブ -->
+    <div id="settingsScreen" class="screen">
+        <div class="screen-header">
+            <h2>設定</h2>
+        </div>
+        <div class="content">
+            <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品マスタ</button>
+            <button class="menu-btn" data-nav="scheduleScreen">📅 増減量スケジュール（PFC設定）</button>
+            <button class="menu-btn" data-nav="exportScreen">📋 週次まとめをコピー</button>
+        </div>
+    </div>
+
+    <!-- 食品マスタ -->
+    <div id="foodsScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>固定食品マスタ</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">新しい固定食品を登録</div>
+                <div class="form-field"><label>品名</label><input type="text" id="foodNameInput" placeholder="例）鶏むね肉"></div>
+                <div class="form-field"><label>別名（読みゆれ・カンマ区切り）</label><input type="text" id="foodAliasInput" placeholder="例）とりむね肉,鶏胸肉"></div>
+                <div class="form-row">
+                    <div class="form-field small">
+                        <label>単位</label>
+                        <select id="foodUnitInput">
+                            <option value="g">g</option>
+                            <option value="個">個</option>
+                            <option value="杯">杯</option>
+                        </select>
+                    </div>
+                    <div class="form-field small"><label>基準量</label><input type="number" id="foodBaseInput" value="100"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field"><label>kcal</label><input type="number" id="foodKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="number" id="foodPInput"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field"><label>F (g)</label><input type="number" id="foodFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="number" id="foodCInput"></div>
+                </div>
+                <button class="btn-block" id="addFoodMasterBtn">登録する</button>
+            </div>
+            <div class="card">
+                <div class="section-label">登録済みの食品</div>
+                <div id="foodsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 増減量スケジュール -->
+    <div id="scheduleScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>増減量スケジュール</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">新しい期間を追加</div>
+                <div class="form-row">
+                    <div class="form-field"><label>開始日</label><input type="date" id="periodStartInput"></div>
+                    <div class="form-field"><label>終了日</label><input type="date" id="periodEndInput"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field"><label>kcal</label><input type="number" id="periodKcalInput"></div>
+                    <div class="form-field"><label>P (g)</label><input type="number" id="periodPInput"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field"><label>F (g)</label><input type="number" id="periodFInput"></div>
+                    <div class="form-field"><label>C (g)</label><input type="number" id="periodCInput"></div>
+                </div>
+                <button class="btn-block" id="addPeriodBtn">追加する</button>
+            </div>
+            <div class="card">
+                <div class="section-label">登録済みの期間</div>
+                <div id="periodsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 週次まとめをコピー -->
+    <div id="exportScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>週次まとめをコピー</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">出力するテキスト（直近7日間）</div>
+                <textarea id="exportPreview" class="paste-textarea" style="height:280px;" readonly></textarea>
+            </div>
+            <button class="btn-block" id="copyExportBtn">📋 このテキストをコピーする</button>
+            <div class="food-meta">「この1週間の食事内容から改善点を教えて」とChatGPT/Claudeに貼り付けるだけで相談できます。</div>
+        </div>
+    </div>
+
+    <!-- 下部タブナビ -->
+    <nav class="tabbar">
+        <button class="tab-item active" data-nav="homeScreen"><span>🍽️</span>記録</button>
+        <button class="tab-item" data-nav="graphScreen"><span>📈</span>グラフ</button>
+        <button class="tab-item" data-nav="weightScreen"><span>⚖️</span>体重</button>
+        <button class="tab-item" data-nav="settingsScreen"><span>⚙️</span>設定</button>
+    </nav>
+
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/addfood.js"></script>
+    <script src="js/foods.js"></script>
+    <script src="js/schedule.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/weight.js"></script>
+    <script src="js/export.js"></script>
+</body>
+</html>
