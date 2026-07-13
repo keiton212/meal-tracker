@@ -46,9 +46,6 @@ const Main = {
     renderSuggestions() {
         const textarea = document.getElementById('quickAddInput');
         const container = document.getElementById('quickAddSuggestions');
-        // 前回選択時に残っていた無効化状態・保留中のクリア処理をリセットする
-        clearTimeout(this._suggestionClearTimer);
-        container.style.pointerEvents = '';
         const value = textarea.value;
         const cursor = textarea.selectionStart;
         const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
@@ -56,6 +53,8 @@ const Main = {
 
         if (!prefix) {
             container.innerHTML = '';
+            // 新しい品目の入力に戻ったので、通常のキーボードに戻す
+            textarea.setAttribute('inputmode', 'text');
             return;
         }
 
@@ -68,18 +67,14 @@ const Main = {
         container.innerHTML =
             '<span class="suggestion-label">候補</span>' +
             matches.map(f => `<button type="button" class="suggestion-chip" data-name="${f.name}">${f.name}</button>`).join('');
-        // 候補がキーボードの裏に隠れて見えないことがないよう表示位置までスクロールする
-        container.scrollIntoView({ block: 'nearest' });
+        // 候補一覧は独立したオーバーレイ（position:absolute）なので、消しても
+        // 他の要素（追加するボタンなど）の位置は動かない。誤タップの心配なく即座に消してよい
         container.querySelectorAll('.suggestion-chip').forEach(chip => {
             let handled = false;
             const select = () => {
                 if (handled) return; // pointerdown/clickの二重発火を防ぐ
                 handled = true;
                 const name = chip.dataset.name;
-                // ここで候補一覧を消す（＝レイアウトが動く）と、まだ処理中のタップの
-                // touchend/clickが、詰めて上に来た別のボタン（追加するボタンなど）を
-                // 誤って踏んでしまう。そのためレイアウトは変えず、操作だけ無効化する
-                container.style.pointerEvents = 'none';
                 this._suppressAutocomplete = true;
                 // setRangeTextはvalueを丸ごと入れ替えないため、IME・undo履歴の状態を壊しにくい
                 if (typeof textarea.setRangeText === 'function') {
@@ -90,11 +85,9 @@ const Main = {
                     this._suppressAutocomplete = false; // valueの直接代入はinputを発火しないため
                 }
                 textarea.focus();
-                // タップの一連の処理（touchend/clickまで）が完全に終わってから見た目を消す
-                this._suggestionClearTimer = setTimeout(() => {
-                    container.innerHTML = '';
-                    container.style.pointerEvents = '';
-                }, 400);
+                container.innerHTML = '';
+                // 次は数量を打つはずなので、数字入力用のキーボードに切り替える
+                textarea.setAttribute('inputmode', 'decimal');
             };
             // pointerdownの時点でpreventDefaultし、textareaからフォーカスが外れる前に確定させる
             // （clickだけに頼ると、環境によってキーボードが一旦閉じてしまうことがあるため）
@@ -159,6 +152,7 @@ const Main = {
         entries.forEach(({ food, amount }) => this.addFoodLog(food, amount));
 
         textarea.value = '';
+        textarea.setAttribute('inputmode', 'text');
         document.getElementById('quickAddSuggestions').innerHTML = '';
         this.renderToday();
 

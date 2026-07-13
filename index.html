@@ -30,13 +30,13 @@
             </div>
             <div class="pfc-line" id="pfcLine"></div>
 
-            <div class="card">
+            <div class="card" style="position:relative;">
                 <div class="section-label">固定食品を追加（音声/手入力・複数行OK）</div>
                 <div class="field-row" style="align-items:flex-start;">
-                    <textarea id="quickAddInput" class="quick-add-textarea" placeholder="例）とりむね肉100g&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
+                    <textarea id="quickAddInput" class="quick-add-textarea" inputmode="text" placeholder="例）とりむね肉100g&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
                 </div>
-                <div id="quickAddSuggestions" class="suggestion-list"></div>
                 <button class="btn-block" id="quickAddBtn">追加する</button>
+                <div id="quickAddSuggestions" class="suggestion-list"></div>
             </div>
 
             <div class="card">

@@ -140,10 +140,16 @@ button, input, select, textarea {
 }
 .quick-add-textarea:focus { outline: none; }
 
+/* 候補一覧は独立したオーバーレイ層にする。通常のflowに置くと、出現/消滅のたびに
+   周りの要素（「追加する」ボタンなど）の位置がズレ、タップの誤爆につながるため */
 .suggestion-list {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;
+    position: absolute; left: 14px; right: 14px; bottom: 58px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px; box-shadow: 0 8px 20px -8px rgba(0,0,0,.35);
+    z-index: 3;
 }
-.suggestion-list:empty { margin-top: 0; }
+.suggestion-list:empty { display: none; border: none; padding: 0; box-shadow: none; }
 .suggestion-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-right: 2px; }
 .suggestion-chip {
     font-size: 12.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft);
