@@ -31,23 +31,18 @@
             <div class="pfc-line" id="pfcLine"></div>
 
             <div class="card">
-                <div class="section-label">食品を追加（音声/手入力）</div>
-                <div class="field-row">
-                    <div class="mic">●</div>
-                    <input type="text" id="quickAddInput" placeholder="例）とりむね肉 200g">
+                <div class="section-label">固定食品を追加（音声/手入力・複数行OK）</div>
+                <div class="field-row" style="align-items:flex-start;">
+                    <div class="mic" style="margin-top:2px;">●</div>
+                    <textarea id="quickAddInput" class="quick-add-textarea" placeholder="例）とりむね肉 200g&#10;複数まとめて書く場合は1行に1品&#10;白米 200g&#10;卵 2個"></textarea>
                 </div>
+                <div class="paste-box" style="margin-top:8px;">固定食品マスタに登録済みの品名と数量を書くだけでOK（1行でも複数行でもここに書けます）。まだ登録していない食品は下の「新しい食品を記録」を使ってください。</div>
                 <button class="btn-block" id="quickAddBtn">追加する</button>
             </div>
 
             <div class="card">
                 <div class="section-label">最近使った食品 · ワンタップ追加</div>
                 <div id="recentFoodsList"></div>
-            </div>
-
-            <div class="card">
-                <div class="section-label">コピペで追加（複数行OK）</div>
-                <textarea id="pasteInput" class="paste-textarea" placeholder="品名,量,単位&#10;例）ツナおにぎり,1,個"></textarea>
-                <button class="btn-block secondary" id="pasteAddBtn">まとめて追加</button>
             </div>
 
             <div class="card">

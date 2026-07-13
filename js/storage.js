@@ -78,13 +78,13 @@ class Storage {
         }
     }
 
-    // 過去に間違った初期値で登録された食品の一回限りの修正（ユーザーの手動編集は上書きしない）
+    // 過去に間違った初期値で登録された食品の一回限りの修正
     runOneTimeFixes() {
-        const FIX_KEY = 'meal_fix_onigiri_v1';
+        const FIX_KEY = 'meal_fix_onigiri_v2';
         if (localStorage.getItem(FIX_KEY)) return;
         const foods = this.getFoods();
         const onigiri = foods.find(f => f.name === 'おにぎり');
-        if (onigiri && onigiri.kcal === 223) {
+        if (onigiri) {
             Object.assign(onigiri, { kcal: 186, p: 2.6, f: 1.1, c: 41.7 });
             this.setFoods(foods);
         }

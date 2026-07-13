@@ -1,23 +1,34 @@
 const Main = {
     init() {
         this.renderToday();
-        document.getElementById('quickAddBtn').addEventListener('click', () => this.handleQuickAdd());
+        document.getElementById('quickAddBtn').addEventListener('click', () => this.handleAdd());
         document.getElementById('quickAddInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') this.handleQuickAdd();
+            // Enterで確定、Shift+Enterで改行（複数行入力用）
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.handleAdd();
+            }
         });
-        document.getElementById('pasteAddBtn').addEventListener('click', () => this.handlePasteAdd());
         document.addEventListener('screen:show', e => {
             if (e.detail.screenId === 'homeScreen') this.renderToday();
         });
     },
 
-    // "とりむね肉 200g" のような1文から 品名/量/単位 を抜き出す
-    parseQuickText(text) {
-        const m = text.trim().match(/^(.+?)\s*([\d.]+)\s*(g|グラム|個|杯|枚|本|ml|cc)?\s*$/);
+    // 1行を "品名 数量単位"（スペース区切り）または "品名,数量,単位"（カンマ区切り）どちらでも解釈する
+    parseLine(line) {
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+
+        if (trimmed.includes(',')) {
+            const parts = trimmed.split(',').map(p => p.trim());
+            const amount = parseFloat(parts[1]);
+            if (!parts[0] || Number.isNaN(amount)) return null;
+            return { name: parts[0], amount };
+        }
+
+        const m = trimmed.match(/^(.+?)\s*([\d.]+)\s*(g|グラム|個|杯|枚|本|玉|食|ml|cc)?\s*$/);
         if (!m) return null;
-        let unit = m[3] || 'g';
-        if (unit === 'グラム') unit = 'g';
-        return { name: m[1].trim(), amount: parseFloat(m[2]), unit };
+        return { name: m[1].trim(), amount: parseFloat(m[2]) };
     },
 
     addFoodLog(food, amount) {
@@ -31,50 +42,33 @@ const Main = {
         });
     },
 
-    handleQuickAdd() {
-        const input = document.getElementById('quickAddInput');
-        const parsed = this.parseQuickText(input.value);
-        if (!parsed) {
-            alert('「食品名 数量」の形式で入力してください（例：とりむね肉 200g）');
-            return;
-        }
-        const food = storage.findFoodByName(parsed.name);
-        if (!food) {
-            if (confirm(`「${parsed.name}」は固定食品に見つかりませんでした。新しい食品を記録する画面を開きますか？`)) {
-                Nav.show('addFoodScreen');
-            }
-            return;
-        }
-        this.addFoodLog(food, parsed.amount);
-        input.value = '';
-        this.renderToday();
-    },
-
-    handlePasteAdd() {
-        const textarea = document.getElementById('pasteInput');
+    handleAdd() {
+        const textarea = document.getElementById('quickAddInput');
         const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
         if (!lines.length) return;
 
         const notFound = [];
         let addedCount = 0;
         for (const line of lines) {
-            const parts = line.split(',').map(p => p.trim());
-            if (parts.length < 2) continue;
-            const [name, amountStr] = parts;
-            const amount = parseFloat(amountStr);
-            if (Number.isNaN(amount)) continue;
-            const food = storage.findFoodByName(name);
+            const parsed = this.parseLine(line);
+            if (!parsed) continue;
+            const food = storage.findFoodByName(parsed.name);
             if (!food) {
-                notFound.push(name);
+                notFound.push(parsed.name);
                 continue;
             }
-            this.addFoodLog(food, amount);
+            this.addFoodLog(food, parsed.amount);
             addedCount++;
         }
+
         textarea.value = '';
         this.renderToday();
+
         if (notFound.length) {
-            alert(`${addedCount}件追加しました。\n見つからなかった食品：${notFound.join('、')}\n「新しい食品を記録」から登録してください。`);
+            const goOpen = lines.length === 1 && addedCount === 0
+                ? confirm(`「${notFound[0]}」は固定食品に見つかりませんでした。新しい食品を記録する画面を開きますか？`)
+                : (alert(`${addedCount}件追加しました。\n見つからなかった食品：${notFound.join('、')}\n固定食品でない場合は「新しい食品を記録」から登録してください。`), false);
+            if (goOpen) Nav.show('addFoodScreen');
         }
     },
 

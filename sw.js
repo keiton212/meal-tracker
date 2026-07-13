@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-tracker-v2';
+const CACHE_NAME = 'meal-tracker-v3';
 const urlsToCache = [
     './',
     './index.html',
@@ -15,6 +15,10 @@ const urlsToCache = [
     './js/export.js',
     './manifest.json'
 ];
+
+self.addEventListener('message', event => {
+    if (event.data === 'skipWaiting') self.skipWaiting();
+});
 
 self.addEventListener('install', event => {
     event.waitUntil(
@@ -37,7 +41,7 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        fetch(event.request)
+        fetch(event.request, { cache: 'no-store' })
             .then(response => {
                 if (response && response.status === 200 && response.type === 'basic') {
                     const clone = response.clone();
