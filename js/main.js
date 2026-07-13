@@ -160,7 +160,7 @@ const Main = {
             list.innerHTML = '<div class="empty-hint">まだ記録がありません</div>';
             return;
         }
-        list.innerHTML = entries.map(e => `
+        list.innerHTML = [...entries].reverse().map(e => `
             <div class="log-row">
                 <div>
                     <div class="food-name">${e.name}</div>
