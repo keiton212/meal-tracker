@@ -22,6 +22,7 @@ const Foods = {
             return `
                 <div class="food-item">
                     <div class="item-row">
+                        <button class="star-btn ${f.favorite ? 'active' : ''}" data-id="${f.id}">${f.favorite ? '★' : '☆'}</button>
                         <div class="food-item-tap" data-id="${f.id}" style="flex:1;">
                             <div class="food-name">${f.name}</div>
                             <div class="food-meta">${f.baseAmount}${f.unit}あたり P${f.p} F${f.f} C${f.c} · ${f.kcal}kcal</div>
@@ -31,6 +32,13 @@ const Foods = {
                     </div>
                 </div>`;
         }).join('');
+
+        list.querySelectorAll('.star-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                storage.toggleFavorite(btn.dataset.id);
+                this.render();
+            });
+        });
 
         list.querySelectorAll('.food-item-tap').forEach(el => {
             el.addEventListener('click', () => {

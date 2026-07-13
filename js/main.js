@@ -9,6 +9,14 @@ const Main = {
         document.getElementById('kcalNum').addEventListener('click', () => {
             document.getElementById('todayLogCard').scrollIntoView({ block: 'start' });
         });
+
+        const quickAddInput = document.getElementById('quickAddInput');
+        quickAddInput.addEventListener('input', () => this.renderSuggestions());
+        quickAddInput.addEventListener('click', () => this.renderSuggestions());
+        quickAddInput.addEventListener('blur', () => {
+            // 候補タップ時にblurが先に発生してしまうため、少し遅らせて消す
+            setTimeout(() => { document.getElementById('quickAddSuggestions').innerHTML = ''; }, 150);
+        });
     },
 
     addFoodLog(food, amount) {
@@ -19,6 +27,40 @@ const Main = {
             amount,
             unit: food.unit,
             ...nutrients
+        });
+    },
+
+    // 現在カーソルがある行の、カーソル位置までの文字列を「入力中の語」とみなしてオートコンプリート候補を出す
+    renderSuggestions() {
+        const textarea = document.getElementById('quickAddInput');
+        const container = document.getElementById('quickAddSuggestions');
+        const value = textarea.value;
+        const cursor = textarea.selectionStart;
+        const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
+        const prefix = value.slice(lineStart, cursor).trim();
+
+        if (!prefix) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const matches = storage.findFoodsByPrefix(prefix);
+        if (!matches.length) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = matches.map(f => `<button type="button" class="suggestion-chip" data-name="${f.name}">${f.name}</button>`).join('');
+        container.querySelectorAll('.suggestion-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const name = chip.dataset.name;
+                const newValue = value.slice(0, lineStart) + name + value.slice(cursor);
+                textarea.value = newValue;
+                const newCursor = lineStart + name.length;
+                textarea.focus();
+                textarea.setSelectionRange(newCursor, newCursor);
+                container.innerHTML = '';
+            });
         });
     },
 
@@ -78,6 +120,7 @@ const Main = {
         entries.forEach(({ food, amount }) => this.addFoodLog(food, amount));
 
         textarea.value = '';
+        document.getElementById('quickAddSuggestions').innerHTML = '';
         this.renderToday();
 
         if (unmatchedLines.length) {
@@ -90,15 +133,14 @@ const Main = {
         }
     },
 
-    renderRecentFoods() {
-        const list = document.getElementById('recentFoodsList');
-        const recent = storage.getRecentFoods(8);
-        if (!recent.length) {
-            list.innerHTML = '<div class="empty-hint">まだ記録がありません</div>';
+    // 「よく使う食品」「最近使った食品」共通のワンタップ追加リストを描画する
+    renderQuickList(containerId, items) {
+        const list = document.getElementById(containerId);
+        if (!items.length) {
+            list.innerHTML = '<div class="empty-hint">まだありません</div>';
             return;
         }
-        list.innerHTML = recent.map(({ food, lastAmount }) => {
-            const amount = lastAmount || food.baseAmount;
+        list.innerHTML = items.map(({ food, amount }) => {
             const n = storage.calcNutrients(food, amount);
             return `
                 <div class="quick-row-wrap">
@@ -155,6 +197,22 @@ const Main = {
                 addFood(btn.dataset.foodId, amount);
             });
         });
+    },
+
+    renderFavoriteFoods() {
+        const favorites = storage.getFavoriteFoods().map(food => ({
+            food,
+            amount: storage.getLastAmountForFood(food.id) || food.baseAmount
+        }));
+        this.renderQuickList('favoriteFoodsList', favorites);
+    },
+
+    renderRecentFoods() {
+        const recent = storage.getRecentFoods(8).map(({ food, lastAmount }) => ({
+            food,
+            amount: lastAmount || food.baseAmount
+        }));
+        this.renderQuickList('recentFoodsList', recent);
     },
 
     renderTodayLogList() {
@@ -216,6 +274,7 @@ const Main = {
             }).join('');
         }
 
+        this.renderFavoriteFoods();
         this.renderRecentFoods();
         this.renderTodayLogList();
     }

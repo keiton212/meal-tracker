@@ -151,6 +151,19 @@ class Storage {
         this.setFoods(this.getFoods().filter(f => f.id !== id));
     }
 
+    toggleFavorite(id) {
+        const foods = this.getFoods();
+        const food = foods.find(f => f.id === id);
+        if (food) {
+            food.favorite = !food.favorite;
+            this.setFoods(foods);
+        }
+    }
+
+    getFavoriteFoods() {
+        return this.getFoods().filter(f => f.favorite);
+    }
+
     // 音声のゆらぎ（カタカナ/ひらがな）を吸収したあいまい検索。
     // 漢字の読み違いまでは自動対応できないため、食品側の別名(aliases)登録で吸収する。
     findFoodByName(rawName) {
@@ -163,6 +176,25 @@ class Storage {
             const candidates = [f.name, ...(f.aliases || [])];
             return candidates.some(c => Utils.normalize(c).includes(target) || target.includes(Utils.normalize(c)));
         });
+    }
+
+    // 入力中の文字列を先頭一致で検索（オートコンプリート用）。品名・別名（読み）どちらも対象
+    findFoodsByPrefix(prefix, limit = 6) {
+        const target = Utils.normalize(prefix);
+        if (!target) return [];
+        const foods = this.getFoods();
+        const seen = new Set();
+        const results = [];
+        for (const f of foods) {
+            const candidates = [f.name, ...(f.aliases || [])];
+            const hit = candidates.some(c => Utils.normalize(c).startsWith(target));
+            if (hit && !seen.has(f.id)) {
+                seen.add(f.id);
+                results.push(f);
+                if (results.length >= limit) break;
+            }
+        }
+        return results;
     }
 
     // ---------- 増減量スケジュール（期間） ----------
@@ -281,6 +313,19 @@ class Storage {
             const food = foods.find(f => f.id === foodId);
             return food ? { food, lastAmount: lastEntry.amount } : null;
         }).filter(Boolean);
+    }
+
+    // 指定した食品を最後に記録した時の量（記録が無ければnull）
+    getLastAmountForFood(foodId) {
+        const logs = this.getLogs();
+        const dates = Object.keys(logs).sort().reverse();
+        for (const d of dates) {
+            const entries = [...logs[d]].reverse();
+            for (const e of entries) {
+                if (e.foodId === foodId) return e.amount;
+            }
+        }
+        return null;
     }
 
     // ---------- 体重 ----------

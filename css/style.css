@@ -139,6 +139,12 @@ button, input, select, textarea {
     resize: vertical; min-height: 22px; font-family: inherit;
 }
 .quick-add-textarea:focus { outline: none; }
+
+.suggestion-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.suggestion-chip {
+    font-size: 12.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft);
+    border: 1px solid rgba(60,110,71,.35); border-radius: 100px; padding: 6px 12px;
+}
 .mic {
     width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px;
@@ -284,6 +290,11 @@ button, input, select, textarea {
 }
 .item-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .item-del { color: var(--crit); background: none; border: none; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.star-btn {
+    background: none; border: none; font-size: 20px; line-height: 1; color: var(--line); flex-shrink: 0;
+    padding: 2px 6px 2px 0;
+}
+.star-btn.active { color: #d9a441; }
 
 .tabbar {
     position: fixed; bottom: 0; left: 0; width: 100%; display: flex;
