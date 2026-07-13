@@ -14,30 +14,25 @@ const Main = {
         });
     },
 
-    UNIT_WORDS: ['g', 'グラム', '個', '杯', '枚', '本', '玉', '食', 'ml', 'cc'],
-
-    // 1行を「品名 + 数量」として解釈する。区切りはカンマ（全角/半角）・読点・空白のどれでもよい。
-    // 例: "鶏むね肉 200g" / "鶏むね肉,200,g" / "鶏むね肉、200" / "森永 高たんぱく牛乳 200ml"
+    // 1行を「品名 + 数量（省略可）」として解釈する。
+    // 区切りはカンマ（全角/半角）・読点・空白のどれでもよく、無くてもよい（例:"鶏むね肉100g"）。
+    // 数量が書かれていない場合（例:"おにぎり"だけ）は amount: null を返し、呼び出し側で食品マスタの基準量を使う。
     parseLine(line) {
-        const tokens = line.trim().split(/[,、,\s]+/).filter(Boolean);
-        if (tokens.length < 2) return null;
+        const trimmed = line.trim();
+        if (!trimmed) return null;
 
-        const last = tokens[tokens.length - 1];
-        let amountToken, nameTokens;
-
-        if (this.UNIT_WORDS.includes(last) && tokens.length >= 3 && !Number.isNaN(parseFloat(tokens[tokens.length - 2]))) {
-            amountToken = tokens[tokens.length - 2];
-            nameTokens = tokens.slice(0, -2);
-        } else {
-            const m = last.match(/^([\d.]+)(g|グラム|個|杯|枚|本|玉|食|ml|cc)?$/);
-            if (!m) return null;
-            amountToken = m[1];
-            nameTokens = tokens.slice(0, -1);
+        const SEP = '[,、,\\s]*';
+        const UNIT = '(?:g|グラム|個|杯|枚|本|玉|食|ml|cc)?';
+        const m = trimmed.match(new RegExp(`^(.+?)${SEP}([\\d]+(?:\\.\\d+)?)${SEP}${UNIT}${SEP}$`));
+        if (m) {
+            const name = m[1].replace(/[,、,\s]+$/, '').trim();
+            if (!name) return null;
+            return { name, amount: parseFloat(m[2]) };
         }
 
-        const amount = parseFloat(amountToken);
-        if (Number.isNaN(amount) || !nameTokens.length) return null;
-        return { name: nameTokens.join(' '), amount };
+        // 数量が見つからない場合は品名のみとみなす（数量は後で食品マスタの基準量を使う）
+        const name = trimmed.replace(/[,、,\s]+$/, '').trim();
+        return name ? { name, amount: null } : null;
     },
 
     addFoodLog(food, amount) {
@@ -66,7 +61,8 @@ const Main = {
                 notFound.push(parsed.name);
                 continue;
             }
-            this.addFoodLog(food, parsed.amount);
+            const amount = parsed.amount != null ? parsed.amount : food.baseAmount;
+            this.addFoodLog(food, amount);
             addedCount++;
         }
 

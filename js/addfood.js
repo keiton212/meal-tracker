@@ -12,11 +12,28 @@ const AddFood = {
         document.getElementById('basisAmountRow').style.display = isPiece ? 'none' : 'flex';
     },
 
-    // "コンビニ チーズケーキ,310,6,21,24" / "コンビニ チーズケーキ　310　6　21　24" など
-    // カンマ（全角/半角）・読点・空白のどれで区切っても、末尾4つの数値をkcal,P,F,Cとして解釈する
+    // "コンビニ チーズケーキ,310,6,21,24" / "コンビニ チーズケーキ　310　6　21　24" /
+    // "コンビニチーズケーキ310 6 21 24"（品名とカロリーの間の区切りは省略可）など。
+    // 数値同士（カロリー・P・F・C）の間は区切りが必須（区別がつかないため）。
     parseLine(line) {
         const tokens = line.trim().split(/[,、,\s]+/).filter(Boolean);
-        if (tokens.length < 5) return null;
+        if (!tokens.length) return null;
+
+        const isNum = t => /^\d+(\.\d+)?$/.test(t);
+        let numCount = 0;
+        for (let i = tokens.length - 1; i >= 0 && isNum(tokens[i]); i--) numCount++;
+
+        // 品名とカロリーがくっついている場合（例:"コンビニチーズケーキ310"）、末尾の数値部分を切り出す
+        if (numCount === 3) {
+            const boundaryIdx = tokens.length - numCount - 1;
+            const glued = boundaryIdx >= 0 ? tokens[boundaryIdx].match(/^(\D+?)(\d+(?:\.\d+)?)$/) : null;
+            if (glued) {
+                tokens.splice(boundaryIdx, 1, glued[1], glued[2]);
+                numCount++;
+            }
+        }
+
+        if (numCount < 4) return null;
         const nums = tokens.slice(-4).map(Number);
         if (nums.some(Number.isNaN)) return null;
         const name = tokens.slice(0, -4).join(' ');
