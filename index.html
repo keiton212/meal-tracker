@@ -143,6 +143,32 @@
             <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品一覧</button>
             <button class="menu-btn" data-nav="scheduleScreen">📅 PFC設定</button>
             <button class="menu-btn" data-nav="exportScreen">📋 週次まとめをコピー</button>
+            <button class="menu-btn" data-nav="backupScreen">💾 データのバックアップ</button>
+        </div>
+    </div>
+
+    <!-- データのバックアップ -->
+    <div id="backupScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>データのバックアップ</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">バックアップを保存</div>
+                <div class="food-meta">
+                    記録・体重・固定食品・設定をすべて1つのファイルに保存します。
+                    iPhoneの「ホーム画面に追加」した状態は稀にデータが消えることがあるため、
+                    定期的（週1回など）にバックアップを取ることを強くおすすめします。
+                </div>
+                <button class="btn-block" id="backupSaveBtn" style="margin-top:10px;">💾 バックアップファイルを保存</button>
+            </div>
+            <div class="card">
+                <div class="section-label">バックアップから復元</div>
+                <div class="food-meta">保存したバックアップファイルを選ぶと、今のデータに復元します（今のデータは上書きされます）。</div>
+                <input type="file" id="backupRestoreInput" accept="application/json" style="margin-top:10px;">
+                <div id="backupRestoreMsg" class="food-meta" style="margin-top:6px;"></div>
+            </div>
         </div>
     </div>
 
@@ -247,5 +273,6 @@
     <script src="js/graph.js"></script>
     <script src="js/weight.js"></script>
     <script src="js/export.js"></script>
+    <script src="js/backup.js"></script>
 </body>
 </html>
