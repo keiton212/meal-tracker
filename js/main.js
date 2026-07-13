@@ -12,6 +12,9 @@ const Main = {
         document.addEventListener('screen:show', e => {
             if (e.detail.screenId === 'homeScreen') this.renderToday();
         });
+        document.getElementById('kcalNum').addEventListener('click', () => {
+            document.getElementById('todayLogCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     },
 
     // 1行を「品名 + 数量（省略可）」として解釈する。
@@ -88,7 +91,7 @@ const Main = {
             const amount = lastAmount || food.baseAmount;
             const n = storage.calcNutrients(food, amount);
             return `
-                <div class="quick-row">
+                <div class="quick-row" data-food-id="${food.id}" data-amount="${amount}">
                     <div>
                         <div class="food-name">${food.name}</div>
                         <div class="food-meta">${amount}${food.unit}あたり P${n.p} F${n.f} C${n.c} · ${n.kcal}kcal</div>
@@ -97,13 +100,22 @@ const Main = {
                 </div>`;
         }).join('');
 
-        list.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const food = storage.getFoods().find(f => f.id === btn.dataset.foodId);
-                if (!food) return;
-                this.addFoodLog(food, parseFloat(btn.dataset.amount));
-                this.renderToday();
+        const addFromRow = el => {
+            const food = storage.getFoods().find(f => f.id === el.dataset.foodId);
+            if (!food) return;
+            this.addFoodLog(food, parseFloat(el.dataset.amount));
+            this.renderToday();
+        };
+
+        // 行全体（品名・数量のテキスト部分）をタップしてもボタンと同じ動作にする
+        list.querySelectorAll('.quick-row').forEach(row => {
+            row.addEventListener('click', e => {
+                if (e.target.closest('.quick-btn')) return; // ボタン自身のクリックは下のハンドラに任せる
+                addFromRow(row);
             });
+        });
+        list.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', () => addFromRow(btn));
         });
     },
 

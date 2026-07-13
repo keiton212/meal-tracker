@@ -113,7 +113,7 @@ button, input, select, textarea {
 }
 
 .kcal-hero { display: flex; align-items: baseline; gap: 6px; }
-.kcal-num { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kcal-num { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
 .kcal-unit { font-size: 13px; color: var(--muted); }
 .kcal-goal { font-size: 12px; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
 
@@ -152,7 +152,7 @@ button, input, select, textarea {
 
 .quick-row {
     display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 2px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line); cursor: pointer;
 }
 .quick-row:last-child { border-bottom: none; }
 .food-name { font-weight: 600; font-size: 13px; }
