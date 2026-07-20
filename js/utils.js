@@ -41,5 +41,25 @@ const Utils = {
 
     uid() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    },
+
+    // 画面下部に数秒だけ出る通知。actionLabelを渡すと取り消しなどのボタンを添えられる
+    toast(message, actionLabel = null, onAction = null, ms = 5000) {
+        document.querySelectorAll('.app-toast').forEach(t => t.remove());
+        const toast = document.createElement('div');
+        toast.className = 'app-toast';
+        toast.innerHTML = `<span>${message}</span>`;
+        if (actionLabel) {
+            const btn = document.createElement('button');
+            btn.className = 'app-toast-btn';
+            btn.textContent = actionLabel;
+            btn.addEventListener('click', () => {
+                toast.remove();
+                if (onAction) onAction();
+            });
+            toast.appendChild(btn);
+        }
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), ms);
     }
 };

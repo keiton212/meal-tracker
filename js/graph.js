@@ -17,6 +17,18 @@ const Graph = {
         }
     },
 
+    // 体重は日々±1kg近く揺れるため、直近n日の平均線を重ねて増減の傾向を読めるようにする。
+    // その日を含む過去n日のうち、記録がある日だけで平均を出す（記録が無い日はnullでスキップ）
+    movingAverage(weights, dateStr, n) {
+        const vals = [];
+        for (let i = 0; i < n; i++) {
+            const v = weights[Utils.addDays(dateStr, -i)];
+            if (v != null) vals.push(v);
+        }
+        if (!vals.length) return null;
+        return Utils.round1(vals.reduce((a, b) => a + b, 0) / vals.length);
+    },
+
     lastNDates(n) {
         const dates = [];
         for (let i = n - 1; i >= 0; i--) dates.push(Utils.addDays(Utils.todayStr(), -i));
@@ -26,7 +38,34 @@ const Graph = {
     render() {
         this.renderTrendChart();
         this.renderPfcAvg();
+        this.renderFiberSaltChart();
         this.renderStatGrid();
+    },
+
+    renderFiberSaltChart() {
+        const canvas = document.getElementById('fiberSaltChart');
+        if (!canvas || !window.Chart) return;
+
+        const dates = this.lastNDates(7);
+        const logs = storage.getLogs();
+        const fiberData = dates.map(d => Utils.round1(storage.sumLogs(logs[d] || []).fiber));
+        const saltData = dates.map(d => Utils.round1(storage.sumLogs(logs[d] || []).salt));
+        const labels = dates.map(d => d.slice(5).replace('-', '/'));
+
+        if (this.fsChart) this.fsChart.destroy();
+        this.fsChart = new Chart(canvas.getContext('2d'), {
+            data: {
+                labels,
+                datasets: [
+                    { type: 'bar', label: '食物繊維(g)', data: fiberData, backgroundColor: 'rgba(60,110,71,.6)' },
+                    { type: 'bar', label: '食塩相当量(g)', data: saltData, backgroundColor: 'rgba(164,55,44,.55)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'g' } } }
+            }
+        });
     },
 
     renderTrendChart() {
@@ -39,6 +78,7 @@ const Graph = {
 
         const kcalData = dates.map(d => storage.sumLogs(logs[d] || []).kcal);
         const weightData = dates.map(d => weights[d] ?? null);
+        const weightAvgData = dates.map(d => this.movingAverage(weights, d, 7));
         const labels = dates.map(d => d.slice(5).replace('-', '/'));
 
         if (this.chart) this.chart.destroy();
@@ -53,8 +93,13 @@ const Graph = {
                     },
                     {
                         type: 'line', label: '体重(kg)', data: weightData,
-                        borderColor: '#8b98a8', borderDash: [4, 3], spanGaps: true,
-                        yAxisID: 'y1', tension: .3
+                        borderColor: '#c2cad4', borderDash: [4, 3], spanGaps: true,
+                        pointRadius: 2, yAxisID: 'y1', tension: .3
+                    },
+                    {
+                        type: 'line', label: '体重7日平均', data: weightAvgData,
+                        borderColor: '#5b6b7f', borderWidth: 2, spanGaps: true,
+                        pointRadius: 0, yAxisID: 'y1', tension: .3
                     }
                 ]
             },

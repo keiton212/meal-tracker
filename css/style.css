@@ -17,6 +17,8 @@
     --crit-soft: #f5e1dd;
     --info: #2f6699;
     --info-soft: #dde8f5;
+    --warn: #8f6b12;
+    --warn-soft: #f3e8c8;
 }
 
 body {
@@ -125,6 +127,192 @@ button, input, select, textarea {
 }
 .pill.remain { background: var(--info-soft); color: var(--info); border-color: rgba(47,102,153,.35); }
 .pill.over { background: var(--crit-soft); color: var(--crit); border-color: rgba(164,55,44,.4); }
+.pill.good { background: var(--accent-soft); color: var(--accent); border-color: rgba(60,110,71,.4); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); border-color: rgba(143,107,18,.4); }
+
+/* サーモンの日（水曜）のリマインダー */
+.salmon-banner {
+    background: var(--info-soft); color: var(--info); border: 1px solid rgba(47,102,153,.35);
+    border-radius: 12px; padding: 10px 12px; font-size: 12.5px; font-weight: 600;
+}
+#salmonBanner:empty { display: none; }
+.salmon-quick-hint {
+    font-size: 11px; font-weight: 600; color: var(--info); background: var(--info-soft);
+    border-radius: 8px; padding: 6px 9px; margin-bottom: 6px;
+}
+
+/* 週次クオータの進捗カード */
+.quota-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 2px; border-bottom: 1px solid var(--line);
+}
+.quota-row:last-child { border-bottom: none; }
+
+/* 食事スロット（朝①・朝②・昼・間食・夕）の選択タブ */
+.meal-tabs { display: flex; gap: 6px; }
+.meal-tab {
+    flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel); font-size: 12.5px; font-weight: 700; color: var(--muted);
+}
+.meal-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* 食事スロットごとのメニュー（量を調整して記録する行） */
+.menu-item { padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+.menu-item:first-child { padding-top: 2px; }
+.menu-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.menu-item .food-name { font-size: 14px; }
+.menu-amount { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.menu-amount-input {
+    width: 58px; text-align: center; border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 4px; font-size: 14px; font-weight: 700; background: var(--bg); color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+.menu-amount-input:focus { outline: none; border-color: var(--accent); }
+.menu-nutrients { margin-top: 4px; }
+.menu-item:last-child { border-bottom: none; }
+
+/* 主菜・主食などの選択グループ */
+.choice-group { margin-top: 14px; }
+.choice-label {
+    font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .03em; margin-bottom: 7px;
+}
+.choice-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice-chip {
+    font-size: 12.5px; font-weight: 600; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 100px; padding: 8px 13px;
+}
+.choice-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.choice-selected .menu-item { border-bottom: none; }
+.choice-selected .empty-hint { padding-top: 8px; }
+
+/* カード見出しの右にリンク風ボタンを置く */
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.link-btn {
+    border: none; background: none; color: var(--accent); font-size: 12px; font-weight: 700;
+    padding: 0 0 10px; flex-shrink: 0;
+}
+.food-edit-btn {
+    border: none; background: none; font-size: 12px; padding: 0 4px; margin-left: 2px; line-height: 1;
+}
+
+/* 日付の移動（記録し忘れた日を埋めるため） */
+.date-nav { display: flex; align-items: center; gap: 8px; }
+.date-center { flex: 1; min-width: 0; }
+.date-arrow {
+    width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: 13px; flex-shrink: 0;
+}
+.date-arrow:disabled { opacity: .35; }
+/* 過去日を編集していることが分かるように上部の色を変える */
+.screen.past-date .topbar { background: var(--info-soft); }
+#backToTodayBtn { padding: 6px 0 0; }
+
+/* 食事タブの記録済みバッジ */
+.meal-dot {
+    display: block; width: 5px; height: 5px; border-radius: 50%; margin: 3px auto 0;
+    background: transparent; border: 1px solid var(--line);
+}
+.meal-dot.done { background: var(--accent); border-color: var(--accent); }
+.meal-tab.active .meal-dot { border-color: rgba(255,255,255,.6); }
+.meal-tab.active .meal-dot.done { background: #fff; border-color: #fff; }
+
+/* 「前回と同じ」ボタン */
+.repeat-btn {
+    width: 100%; text-align: left; background: var(--accent-soft); border: 1px solid rgba(60,110,71,.3);
+    border-radius: 11px; padding: 10px 12px; margin-bottom: 12px; display: block;
+}
+.repeat-title { display: block; font-size: 12.5px; font-weight: 700; color: var(--accent); }
+.repeat-detail {
+    display: block; font-size: 11px; color: var(--muted); margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 記録前の着地点プレビュー */
+.projection {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px;
+}
+.projection:empty { display: none; }
+.projection-label { font-size: 11px; font-weight: 700; color: var(--muted); }
+.projection-macros { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* クオータの未消化アラート */
+.quota-alert {
+    background: var(--warn-soft); color: var(--warn); border: 1px solid rgba(143,107,18,.35);
+    border-radius: 10px; padding: 9px 11px; font-size: 12px; font-weight: 600; margin-bottom: 10px;
+}
+
+/* 取り消しボタン付きトースト */
+.app-toast {
+    position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
+    background: rgba(24,28,25,.95); color: #fff; padding: 12px 14px; border-radius: 12px;
+    font-size: 13px; z-index: 40; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 20px -8px rgba(0,0,0,.5);
+}
+.app-toast span { flex: 1; min-width: 0; }
+.app-toast-btn {
+    background: none; border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 100px;
+    padding: 6px 13px; font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+
+.item-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.item-edit { color: var(--accent); background: none; border: none; font-size: 12px; font-weight: 600; }
+
+/* 献立の編集画面 */
+.plan-variant { display: flex; gap: 6px; margin-bottom: 10px; }
+.variant-btn {
+    flex: 1; padding: 8px 0; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); font-size: 12.5px; font-weight: 700; color: var(--muted);
+}
+.variant-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.plan-row {
+    display: flex; align-items: center; gap: 7px; padding: 9px 0; border-bottom: 1px solid var(--line);
+}
+.plan-row-name { flex: 1; min-width: 0; }
+.plan-missing { color: var(--crit); }
+.plan-amount {
+    width: 62px; text-align: center; border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px;
+    font-size: 13px; background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.plan-amount:focus { outline: none; border-color: var(--accent); }
+.plan-add { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.plan-add-food {
+    flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 9px;
+    padding: 9px 8px; font-size: 13px; color: var(--ink);
+}
+.plan-add-amount {
+    width: 62px; text-align: center; border: 1px solid var(--line); border-radius: 8px; padding: 8px 4px;
+    font-size: 13px; background: var(--bg); color: var(--ink);
+}
+.plan-add-btn {
+    flex-shrink: 0; background: var(--accent); color: #fff; border: none; border-radius: 9px;
+    padding: 9px 13px; font-size: 13px; font-weight: 700;
+}
+
+/* 今日の記録の食事グループ */
+.meal-group { margin-bottom: 4px; }
+.meal-group-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    background: var(--bg); border-radius: 8px; padding: 5px 9px; margin: 10px 0 2px;
+    font-variant-numeric: tabular-nums;
+}
+.meal-group:first-child .meal-group-head { margin-top: 0; }
+.log-row-main { flex: 1; cursor: pointer; }
+
+/* 量入力の−/＋ステッパー */
+.step-btn {
+    width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); font-size: 17px; font-weight: 700; color: var(--ink); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.log-edit-panel { padding-top: 4px; }
+
+/* 増減量スケジュールの曜日ごと目標入力（7曜日×kcal/P/F/C） */
+.weekly-day-row { display: flex; align-items: flex-end; gap: 6px; margin-top: 8px; }
+.weekly-day-label { width: 22px; flex-shrink: 0; font-weight: 700; font-size: 13px; color: var(--muted); padding-bottom: 10px; }
+.weekly-day-row .form-field { margin-top: 0; }
+.weekly-day-row input { padding: 8px 6px; font-size: 12.5px; }
 
 .field-row {
     display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line);

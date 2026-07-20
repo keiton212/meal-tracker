@@ -56,6 +56,10 @@ const AddFood = {
         // "実際に食べた量" は100gあたり選択時のみ使用。1つあたりの場合は常に1つ分を記録する
         const eatenAmount = isPiece ? 1 : (parseFloat(document.getElementById('basisAmountInput').value) || 100);
 
+        // 食物繊維・食塩相当量は任意入力（空欄は0扱い）
+        const fiberBase = parseFloat(document.getElementById('newFiberInput').value) || 0;
+        const saltBase = parseFloat(document.getElementById('newSaltInput').value) || 0;
+
         const saveAsFixed = document.getElementById('saveAsFixedCheck').checked;
         let food = null;
         if (saveAsFixed) {
@@ -67,7 +71,9 @@ const AddFood = {
                 kcal: parsed.kcal,
                 p: parsed.p,
                 f: parsed.f,
-                c: parsed.c
+                c: parsed.c,
+                fiber: fiberBase,
+                salt: saltBase
             };
             const existing = storage.findFoodByName(parsed.name);
             if (existing) {
@@ -79,24 +85,30 @@ const AddFood = {
         }
 
         const ratio = isPiece ? 1 : (eatenAmount / basisAmount);
-        storage.addLogEntry({
+        const created = storage.addLogEntry({
             foodId: food ? food.id : null,
             name: parsed.name,
             amount: eatenAmount,
             unit: basisUnit,
+            meal: Main.selectedMeal,
             kcal: Utils.round1(parsed.kcal * ratio),
             p: Utils.round1(parsed.p * ratio),
             f: Utils.round1(parsed.f * ratio),
-            c: Utils.round1(parsed.c * ratio)
-        });
+            c: Utils.round1(parsed.c * ratio),
+            fiber: Utils.round1(fiberBase * ratio),
+            salt: Utils.round1(saltBase * ratio)
+        }, Main.currentDate);
 
         input.value = '';
+        document.getElementById('newFiberInput').value = '';
+        document.getElementById('newSaltInput').value = '';
         document.getElementById('saveAsFixedCheck').checked = true;
         document.getElementById('basis100g').checked = true;
         document.getElementById('basisAmountInput').value = 100;
         this.updateBasisUI();
         Main.renderToday();
         Nav.show('homeScreen');
+        Main.showUndoToast([created]);
     }
 };
 

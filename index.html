@@ -20,8 +20,15 @@
     <!-- ① 今日の記録 -->
     <div id="homeScreen" class="screen active">
         <div class="topbar">
-            <div class="title" id="todayLabel">今日</div>
-            <div class="sub" id="periodLabel">スケジュール未設定</div>
+            <div class="date-nav">
+                <button class="date-arrow" id="prevDayBtn">◀</button>
+                <div class="date-center">
+                    <div class="title" id="todayLabel">今日</div>
+                    <div class="sub" id="periodLabel">スケジュール未設定</div>
+                </div>
+                <button class="date-arrow" id="nextDayBtn">▶</button>
+            </div>
+            <button class="link-btn" id="backToTodayBtn" style="display:none;">今日に戻る</button>
         </div>
         <div class="content">
             <div class="kcal-hero">
@@ -29,9 +36,22 @@
                 <span class="kcal-goal" id="kcalGoal"></span>
             </div>
             <div class="pfc-line" id="pfcLine"></div>
+            <div class="pfc-line" id="fsLine"></div>
+            <div id="salmonBanner"></div>
+
+            <div class="meal-tabs" id="mealTabs"></div>
+
+            <div class="card" id="mealPanelCard">
+                <div class="panel-head">
+                    <div class="section-label" id="mealPanelLabel">メニュー</div>
+                    <button class="link-btn" id="editMealPlanBtn">献立を変更</button>
+                </div>
+                <div id="repeatLastWrap"></div>
+                <div id="mealPanel"></div>
+            </div>
 
             <div class="card" style="position:relative;">
-                <div class="section-label">固定食品を追加（音声/手入力・複数行OK）</div>
+                <div class="section-label">その他を追加（音声/手入力・複数行OK）</div>
                 <div class="field-row" style="align-items:flex-start;">
                     <textarea id="quickAddInput" class="quick-add-textarea" inputmode="text" placeholder="例）とりむね肉100g&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
                 </div>
@@ -40,13 +60,9 @@
             </div>
 
             <div class="card">
-                <div class="section-label">よく使う食品 · ワンタップ追加</div>
-                <div id="favoriteFoodsList"></div>
-            </div>
-
-            <div class="card">
-                <div class="section-label">最近使った食品 · ワンタップ追加</div>
-                <div id="recentFoodsList"></div>
+                <div class="section-label">今週のクオータ（主菜の回数）</div>
+                <div id="quotaAlert"></div>
+                <div id="quotaList"></div>
             </div>
 
             <div class="card" id="todayLogCard">
@@ -64,6 +80,7 @@
             <h2>新しい食品を記録</h2>
         </div>
         <div class="content">
+            <div class="meal-tabs" id="mealTabsAdd"></div>
             <div class="card">
                 <div class="section-label">1行で入力（品名・カロリー・PFC）</div>
                 <div class="paste-box">
@@ -87,6 +104,13 @@
                     <input type="text" inputmode="decimal" id="basisAmountInput" value="100">
                 </div>
             </div>
+            <div class="card">
+                <div class="section-label">食物繊維・食塩相当量（わかれば入力・任意）</div>
+                <div class="form-row">
+                    <div class="form-field"><label>食物繊維 (g)</label><input type="text" inputmode="decimal" id="newFiberInput" placeholder="0"></div>
+                    <div class="form-field"><label>食塩相当量 (g)</label><input type="text" inputmode="decimal" id="newSaltInput" placeholder="0"></div>
+                </div>
+            </div>
             <label class="check-row">
                 <input type="checkbox" id="saveAsFixedCheck" checked>
                 <span>この内容を<b>固定食品</b>として登録する（次回から選んで使える）</span>
@@ -108,6 +132,10 @@
             <div class="chart-wrap">
                 <div class="chart-title">PFC平均達成率（直近7日）</div>
                 <div class="macro-bars" id="pfcAvgBars"></div>
+            </div>
+            <div class="chart-wrap">
+                <div class="chart-title">食物繊維 / 食塩相当量（直近7日）· 目標：繊維25g以上 / 塩7g未満</div>
+                <canvas id="fiberSaltChart" height="160"></canvas>
             </div>
             <div class="stat-grid" id="statGrid"></div>
         </div>
@@ -140,7 +168,8 @@
             <h2>設定</h2>
         </div>
         <div class="content">
-            <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品一覧</button>
+            <button class="menu-btn" data-nav="mealPlanScreen">🍱 献立の編集</button>
+            <button class="menu-btn" data-nav="foodsScreen">🍗 固定食品一覧（PFCの修正）</button>
             <button class="menu-btn" data-nav="scheduleScreen">📅 PFC設定</button>
             <button class="menu-btn" data-nav="exportScreen">📋 週次まとめをコピー</button>
             <button class="menu-btn" data-nav="backupScreen">💾 データのバックアップ</button>
@@ -172,6 +201,19 @@
         </div>
     </div>
 
+    <!-- 献立の編集 -->
+    <div id="mealPlanScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>献立の編集</h2>
+        </div>
+        <div class="content">
+            <div class="meal-tabs" id="mealPlanTabs"></div>
+            <div id="mealPlanBody"></div>
+            <button class="btn-block secondary" id="mealPlanResetBtn">献立を初期状態に戻す</button>
+        </div>
+    </div>
+
     <!-- 食品マスタ -->
     <div id="foodsScreen" class="screen">
         <div class="screen-header">
@@ -181,6 +223,7 @@
         <div class="content">
             <div class="card">
                 <div class="section-label">登録済みの食品</div>
+                <input type="search" id="foodSearchInput" class="text-input" placeholder="品名・読みで検索" style="margin-bottom:10px;">
                 <div id="foodsList"></div>
             </div>
         </div>
@@ -206,31 +249,39 @@
                 </div>
                 <div class="food-meta" style="margin-top:6px;">チェックした曜日が「休み日」として扱われます</div>
             </div>
-            <div class="card">
-                <div class="section-label">新しい期間を追加</div>
+            <div class="card" id="periodFormCard">
+                <div class="section-label" id="periodFormLabel">新しい期間を追加</div>
                 <div class="form-row">
                     <div class="form-field"><label>開始日</label><input type="date" id="periodStartInput"></div>
                     <div class="form-field"><label>終了日</label><input type="date" id="periodEndInput"></div>
                 </div>
-                <div class="section-label" style="margin-top:12px;">トレ日の目標（休み日以外）</div>
-                <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodTrainKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodTrainPInput"></div>
+                <label class="check-row" style="margin-top:12px;">
+                    <input type="checkbox" id="weeklyModeCheck">
+                    <span><b>曜日ごとに目標を設定する</b>（チェックなし＝トレ日/休み日の2種類）</span>
+                </label>
+                <div id="trainRestFields">
+                    <div class="section-label" style="margin-top:12px;">トレ日の目標（休み日以外）</div>
+                    <div class="form-row">
+                        <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodTrainKcalInput"></div>
+                        <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodTrainPInput"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodTrainFInput"></div>
+                        <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodTrainCInput"></div>
+                    </div>
+                    <div class="section-label" style="margin-top:12px;">休み日の目標</div>
+                    <div class="form-row">
+                        <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodRestKcalInput"></div>
+                        <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodRestPInput"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodRestFInput"></div>
+                        <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodRestCInput"></div>
+                    </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodTrainFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodTrainCInput"></div>
-                </div>
-                <div class="section-label" style="margin-top:12px;">休み日の目標</div>
-                <div class="form-row">
-                    <div class="form-field"><label>kcal</label><input type="text" inputmode="decimal" id="periodRestKcalInput"></div>
-                    <div class="form-field"><label>P (g)</label><input type="text" inputmode="decimal" id="periodRestPInput"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-field"><label>F (g)</label><input type="text" inputmode="decimal" id="periodRestFInput"></div>
-                    <div class="form-field"><label>C (g)</label><input type="text" inputmode="decimal" id="periodRestCInput"></div>
-                </div>
+                <div id="weeklyFields" style="display:none;"></div>
                 <button class="btn-block" id="addPeriodBtn">追加する</button>
+                <button class="btn-block secondary" id="cancelPeriodEditBtn" style="display:none;">編集をやめる</button>
             </div>
             <div class="card">
                 <div class="section-label">登録済みの期間</div>
@@ -270,6 +321,7 @@
     <script src="js/addfood.js"></script>
     <script src="js/foods.js"></script>
     <script src="js/schedule.js"></script>
+    <script src="js/mealplan.js"></script>
     <script src="js/graph.js"></script>
     <script src="js/weight.js"></script>
     <script src="js/export.js"></script>
