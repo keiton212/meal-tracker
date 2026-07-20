@@ -405,6 +405,51 @@ const Main = {
         });
     },
 
+    // 「よく使う食品」「最近使った食品」のワンタップ追加リスト。
+    // 献立に無いものを単発で足したいとき用（量は前回記録した値を初期表示する）
+    renderQuickAddList(containerId, items) {
+        const list = document.getElementById(containerId);
+        if (!list) return;
+        if (!items.length) {
+            list.innerHTML = '<div class="empty-hint">まだありません</div>';
+            return;
+        }
+        list.innerHTML = items.map(({ food, amount }) =>
+            this.amountRowHtml(food, amount) +
+            `<button class="menu-add-btn" data-food-id="${food.id}">この量で記録する</button>`
+        ).join('');
+
+        this.bindAmountRows(list);
+        list.querySelectorAll('.menu-add-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = list.querySelector(`.menu-item[data-food-id="${btn.dataset.foodId}"]`);
+                const amount = parseFloat(item.querySelector('.menu-amount-input').value);
+                const food = storage.getFoods().find(f => f.id === btn.dataset.foodId);
+                if (!food || Number.isNaN(amount) || amount <= 0) return;
+                const entry = this.addFoodLog(food, amount);
+                if (!entry) return;
+                this.renderToday();
+                this.showUndoToast([entry]);
+            });
+        });
+    },
+
+    renderFavoriteFoods() {
+        const items = storage.getFavoriteFoods().map(food => ({
+            food,
+            amount: storage.getLastAmountForFood(food.id) || food.baseAmount
+        }));
+        this.renderQuickAddList('favoriteFoodsList', items);
+    },
+
+    renderRecentFoods() {
+        const items = storage.getRecentFoods(8).map(({ food, lastAmount }) => ({
+            food,
+            amount: lastAmount || food.baseAmount
+        }));
+        this.renderQuickAddList('recentFoodsList', items);
+    },
+
     // 量の行（−/＋ステッパーと入力欄）にイベントを設定する
     bindAmountRows(root) {
         // 鉛筆ボタン：買う商品でPFCが変わることがあるため、その場から食品の編集画面へ飛べるようにする
@@ -467,6 +512,7 @@ const Main = {
                         <div class="food-name">${e.name}</div>
                         <div class="food-meta">${e.amount}${e.unit} · P${e.p} F${e.f} C${e.c} · ${e.kcal}kcal</div>
                     </div>
+                    <button class="log-again" data-id="${e.id}" title="同じ内容をもう一度記録">＋</button>
                     <button class="log-del" data-id="${e.id}">×</button>
                 </div>
                 <div class="quick-edit-panel log-edit-panel" data-id="${e.id}" data-default-amount="${e.amount}" data-step="${step}" style="display:none;">
@@ -494,6 +540,18 @@ const Main = {
             btn.addEventListener('click', () => {
                 storage.deleteLogEntry(today, btn.dataset.id);
                 this.renderToday();
+            });
+        });
+
+        // おかわりなど、記録済みの品をそのままもう一度足す
+        list.querySelectorAll('.log-again').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const src = storage.getLogsForDate(today).find(e => e.id === btn.dataset.id);
+                if (!src) return;
+                const { id, time, ...rest } = src;
+                const entry = storage.addLogEntry(rest, today);
+                this.renderToday();
+                this.showUndoToast([entry]);
             });
         });
 
@@ -586,6 +644,8 @@ const Main = {
         this.renderRepeatLast();
         this.renderMealPanel();
         this.renderQuota();
+        this.renderFavoriteFoods();
+        this.renderRecentFoods();
         this.renderTodayLogList();
     },
 

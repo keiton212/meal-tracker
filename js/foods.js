@@ -61,10 +61,32 @@ const Foods = {
                             <div class="food-meta">${f.baseAmount}${f.unit}あたり P${f.p} F${f.f} C${f.c} · ${f.kcal}kcal${extra.length ? ' · ' + extra.join(' ') : ''}</div>
                             ${f.aliases && f.aliases.length ? `<div class="food-meta">読み: ${f.aliases.join('/')}</div>` : ''}
                         </div>
-                        <button class="item-del" data-id="${f.id}">削除</button>
+                        <div class="item-actions">
+                            <button class="food-add" data-id="${f.id}">＋記録</button>
+                            <button class="item-del" data-id="${f.id}">削除</button>
+                        </div>
                     </div>
                 </div>`;
         }).join('');
+
+        // 一覧からその場で記録できるようにする（記録先は今ホーム画面で選んでいる日付・食事）
+        const mealLabel = (MEAL_DEFS.find(m => m.key === Main.selectedMeal) || {}).label || '';
+        document.getElementById('foodsAddHint').textContent =
+            `「＋記録」の記録先：${Utils.formatJP(Main.currentDate)} の${mealLabel}（ホーム画面のタブで変更できます）`;
+        list.querySelectorAll('.food-add').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const food = storage.getFoods().find(f => f.id === btn.dataset.id);
+                if (!food) return;
+                const amount = storage.getLastAmountForFood(food.id) || food.baseAmount;
+                const entry = Main.addFoodLog(food, amount);
+                if (!entry) return;
+                Main.renderToday();
+                Utils.toast(`✓ ${mealLabel}に ${food.name} ${amount}${food.unit} を記録`, '取り消す', () => {
+                    storage.deleteLogEntry(Main.currentDate, entry.id);
+                    Main.renderToday();
+                });
+            });
+        });
 
         list.querySelectorAll('.star-btn').forEach(btn => {
             btn.addEventListener('click', () => {

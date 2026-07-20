@@ -50,6 +50,16 @@
                 <div id="mealPanel"></div>
             </div>
 
+            <details class="card fold-card">
+                <summary class="fold-summary">★ よく使う食品 · ワンタップ追加</summary>
+                <div id="favoriteFoodsList"></div>
+            </details>
+
+            <details class="card fold-card">
+                <summary class="fold-summary">最近使った食品 · ワンタップ追加</summary>
+                <div id="recentFoodsList"></div>
+            </details>
+
             <div class="card" style="position:relative;">
                 <div class="section-label">その他を追加（音声/手入力・複数行OK）</div>
                 <div class="field-row" style="align-items:flex-start;">
@@ -223,6 +233,7 @@
         <div class="content">
             <div class="card">
                 <div class="section-label">登録済みの食品</div>
+                <div class="food-meta" id="foodsAddHint" style="margin-bottom:8px;"></div>
                 <input type="search" id="foodSearchInput" class="text-input" placeholder="品名・読みで検索" style="margin-bottom:10px;">
                 <div id="foodsList"></div>
             </div>

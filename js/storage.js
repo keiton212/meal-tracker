@@ -57,6 +57,7 @@ const MEAL_PRESETS = {
         fixed: [
             { name: '白米(炊飯後)', amount: 200 },
             { name: 'バナナ', amount: 1 },
+            { name: 'ブルーベリー', amount: 30 },
             { name: 'ホエイプロテイン(エクスプロージョン)', amount: 75 }
         ],
         choices: []
@@ -162,6 +163,11 @@ const CYCLE_FOODS = [
     { name: 'さつまいも(蒸し)', unit: 'g', baseAmount: 100, kcal: 131, p: 0.9, f: 0.2, c: 29.3, fiber: 2.3, salt: 0, category: 'carb', favorite: true, aliases: ['さつまいも', 'サツマイモ'] }
 ];
 
+// 後から献立に追加した食品（マイグレーションで既存ユーザーにも配る）
+const CYCLE_FOODS_V2 = [
+    { name: 'ブルーベリー', unit: 'g', baseAmount: 100, kcal: 49, p: 0.5, f: 0.1, c: 12.9, fiber: 3.3, salt: 0, category: null, favorite: true, aliases: [] }
+];
+
 const SEED_FOODS = [
     { id: 'f1', name: '鶏胸肉・皮なし', aliases: ['鶏むね肉', 'とりむね肉', '鶏胸肉', 'とり胸', 'トリムネ肉'], unit: 'g', baseAmount: 100, kcal: 108, p: 23.3, f: 1.5, c: 0 },
     { id: 'f2', name: '白米', aliases: ['ごはん', 'ご飯'], unit: 'g', baseAmount: 100, kcal: 156, p: 2.5, f: 0.3, c: 35.6 },
@@ -235,6 +241,39 @@ class Storage {
         }
         // シード投入・マージが終わった後に走らせる（シード分の期間にもtargetModeを補完するため）
         this.migrateCycleV1();
+        this.migrateCycleV2();
+    }
+
+    // 朝食①にブルーベリーを追加。献立を編集済みのユーザーにも行き渡るよう、
+    // 保存済みの献立にも（まだ入っていなければ）差し込む
+    migrateCycleV2() {
+        const KEY = 'meal_migration_cycle_v2';
+        if (localStorage.getItem(KEY)) return;
+
+        const foods = this.getFoods();
+        CYCLE_FOODS_V2.forEach(cf => {
+            const existing = foods.find(f => f.name === cf.name);
+            if (existing) Object.assign(existing, { ...cf, id: existing.id, favorite: existing.favorite || cf.favorite });
+            else foods.push({ id: Utils.uid(), ...cf });
+        });
+        this.setFoods(foods);
+
+        const raw = localStorage.getItem(STORAGE_KEYS.MEAL_PLAN);
+        if (raw) {
+            try {
+                const plan = JSON.parse(raw);
+                const b1 = plan.b1;
+                if (b1 && Array.isArray(b1.fixed) && !b1.fixed.some(i => i.name === 'ブルーベリー')) {
+                    const bananaIdx = b1.fixed.findIndex(i => i.name === 'バナナ');
+                    b1.fixed.splice(bananaIdx >= 0 ? bananaIdx + 1 : b1.fixed.length, 0, { name: 'ブルーベリー', amount: 30 });
+                    this.setMealPlan(plan);
+                }
+            } catch (err) {
+                // 保存済み献立が壊れている場合は初期献立にブルーベリーが入っているのでそのままでよい
+            }
+        }
+
+        localStorage.setItem(KEY, '1');
     }
 
     // ---------- 休み日の曜日設定 ----------
