@@ -173,7 +173,7 @@ const MealPlan = {
         body.querySelectorAll('.plan-amount').forEach(input => {
             input.addEventListener('change', () => {
                 const row = input.closest('.plan-row');
-                const amount = parseFloat(input.value);
+                const amount = parseFloat(Utils.toDecimalString(input.value));
                 if (Number.isNaN(amount) || amount <= 0) { this.render(); return; }
                 const target = this.targetList(slot, row.dataset.kind, row.dataset.group);
                 if (!target) return;
@@ -200,7 +200,7 @@ const MealPlan = {
                 const foodId = wrap.querySelector('.plan-add-food').value;
                 const food = storage.getFoods().find(f => f.id === foodId);
                 if (!food) return;
-                const raw = wrap.querySelector('.plan-add-amount').value.trim();
+                const raw = Utils.toDecimalString(wrap.querySelector('.plan-add-amount').value).trim();
                 const amount = raw ? parseFloat(raw) : food.baseAmount;
                 if (Number.isNaN(amount) || amount <= 0) { alert('量を正しく入力してください。'); return; }
                 const target = this.targetList(slot, wrap.dataset.kind, wrap.dataset.group);

@@ -30,6 +30,23 @@ const Utils = {
         );
     },
 
+    // 全角数字・全角小数点・全角カンマを半角に変換する（音声入力の書き起こしが全角になるケースに対応）。
+    // 日本語キーボード/音声入力で「.」のつもりで入力すると句点「。」になることがあるため、
+    // 数値入力の文脈ではそれも小数点として扱う
+    toHalfWidth(str) {
+        return String(str)
+            .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+            .replace(/[．。]/g, '.')
+            .replace(/，/g, ',');
+    },
+
+    // toHalfWidthに加えて、読点「、」も小数点として扱う。
+    // 「、」は1行入力（品名,カロリー,P,F,C）や複数行の一括入力では区切り文字として
+    // 使われているため、そちらでは使わず、単独の数値欄（グラム数・PFC目標値など）でのみ使う
+    toDecimalString(str) {
+        return this.toHalfWidth(str).replace(/、/g, '.');
+    },
+
     normalize(str) {
         return this.toHiragana(String(str).trim().toLowerCase())
             .replace(/\s+/g, '');

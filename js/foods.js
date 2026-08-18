@@ -174,19 +174,21 @@ const Foods = {
         const name = item.querySelector('.e-name').value.trim();
         const aliasRaw = item.querySelector('.e-alias').value.trim();
         const unit = item.querySelector('.e-unit').value.trim();
-        const baseAmount = parseFloat(item.querySelector('.e-base').value);
-        const kcal = parseFloat(item.querySelector('.e-kcal').value);
-        const p = parseFloat(item.querySelector('.e-p').value);
-        const f = parseFloat(item.querySelector('.e-f').value);
-        const c = parseFloat(item.querySelector('.e-c').value);
+        // 全角数字・全角小数点で入力されても（音声入力の書き起こしなど）読み取れるようにする
+        const num = sel => parseFloat(Utils.toDecimalString(item.querySelector(sel).value));
+        const baseAmount = num('.e-base');
+        const kcal = num('.e-kcal');
+        const p = num('.e-p');
+        const f = num('.e-f');
+        const c = num('.e-c');
 
         if (!name || [baseAmount, kcal, p, f, c].some(Number.isNaN)) {
             alert('品名と数値項目をすべて入力してください。');
             return;
         }
         // 繊維・塩分は空欄可（空欄=未設定null。計算上は0として扱われる）
-        const fiberRaw = item.querySelector('.e-fiber').value.trim();
-        const saltRaw = item.querySelector('.e-salt').value.trim();
+        const fiberRaw = Utils.toDecimalString(item.querySelector('.e-fiber').value).trim();
+        const saltRaw = Utils.toDecimalString(item.querySelector('.e-salt').value).trim();
         const fiber = fiberRaw === '' ? null : (parseFloat(fiberRaw) || 0);
         const salt = saltRaw === '' ? null : (parseFloat(saltRaw) || 0);
         const category = item.querySelector('.e-category').value || null;

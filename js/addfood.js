@@ -13,10 +13,15 @@ const AddFood = {
     },
 
     // "コンビニ チーズケーキ,310,6,21,24" / "コンビニ チーズケーキ　310　6　21　24" /
-    // "コンビニチーズケーキ310 6 21 24"（品名とカロリーの間の区切りは省略可）など。
+    // "コンビニチーズケーキ310 6 21 24"（品名とカロリーの間の区切りは省略可）
+    // / "コンビニ　チーズケーキ，３１０　６　２１　２４"（全角数字・全角カンマ・音声入力の余分な空白）など、
+    // 入力方法によらず（特に音声入力の書き起こし結果を想定して）表記ゆれを幅広く吸収する。
     // 数値同士（カロリー・P・F・C）の間は区切りが必須（区別がつかないため）。
+    // 読点「、」はここでは項目の区切り文字として使うため、toDecimalStringではなく
+    // toHalfWidthを使う（「、」を小数点に変換すると区切りが機能しなくなる）。
+    // 数値の小数点は半角/全角ピリオド「.」「．」・句点「。」のいずれかで入力する
     parseLine(line) {
-        const tokens = line.trim().split(/[,、,\s]+/).filter(Boolean);
+        const tokens = Utils.toHalfWidth(line).trim().split(/[,，、\s]+/).filter(Boolean);
         if (!tokens.length) return null;
 
         const isNum = t => /^\d+(\.\d+)?$/.test(t);
@@ -54,11 +59,13 @@ const AddFood = {
         const basisUnit = isPiece ? '個' : 'g';
 
         // "実際に食べた量" は100gあたり選択時のみ使用。1つあたりの場合は常に1つ分を記録する
-        const eatenAmount = isPiece ? 1 : (parseFloat(document.getElementById('basisAmountInput').value) || 100);
+        // （全角数字・句点/読点による小数点表記でも読み取れるようにする。ここは単独の数値欄なので
+        //   parseLineとは違い「、」も区切り文字と衝突せず小数点として使える）
+        const eatenAmount = isPiece ? 1 : (parseFloat(Utils.toDecimalString(document.getElementById('basisAmountInput').value)) || 100);
 
         // 食物繊維・食塩相当量は任意入力（空欄は0扱い）
-        const fiberBase = parseFloat(document.getElementById('newFiberInput').value) || 0;
-        const saltBase = parseFloat(document.getElementById('newSaltInput').value) || 0;
+        const fiberBase = parseFloat(Utils.toDecimalString(document.getElementById('newFiberInput').value)) || 0;
+        const saltBase = parseFloat(Utils.toDecimalString(document.getElementById('newSaltInput').value)) || 0;
 
         const saveAsFixed = document.getElementById('saveAsFixedCheck').checked;
         let food = null;

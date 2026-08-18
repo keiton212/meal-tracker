@@ -58,18 +58,18 @@ const MEAL_PRESETS = {
             { name: '白米(炊飯後)', amount: 200 },
             { name: 'バナナ', amount: 1 },
             { name: 'ブルーベリー', amount: 30 },
-            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 75 }
+            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 2.5 }
         ],
         choices: []
     },
     b2: {
         fixed: [
             { name: '卵(全卵2個)', amount: 2 },
-            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 30 }
+            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 1 }
         ],
         salmonFixed: [
             { name: 'ゆで卵白4個相当', amount: 4 },
-            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 30 }
+            { name: 'ホエイプロテイン(エクスプロージョン)', amount: 1 }
         ],
         choices: []
     },
@@ -147,7 +147,7 @@ const CYCLE_FOODS = [
     { name: '卵(全卵2個)', unit: '個', baseAmount: 2, kcal: 142, p: 12.2, f: 10.2, c: 0.4, fiber: 0, salt: 0.4, category: null, favorite: true, aliases: ['全卵'] },
     { name: 'バナナ', unit: '本', baseAmount: 1, kcal: 93, p: 1.1, f: 0.2, c: 21.4, fiber: 1.1, salt: 0, category: null, favorite: true, aliases: [] },
     { name: 'ゆで卵白4個相当', unit: '個', baseAmount: 4, kcal: 34, p: 7.2, f: 0.06, c: 0.5, fiber: 0, salt: 0.1, category: 'eggwhite', favorite: true, aliases: ['卵白', 'ゆで卵白'] },
-    { name: 'ホエイプロテイン(エクスプロージョン)', unit: 'g', baseAmount: 30, kcal: 138, p: 25.0, f: 0, c: 9.6, fiber: 0, salt: 0.1, category: null, favorite: true, aliases: ['ホエイプロテイン', 'エクスプロージョン', 'ホエイ'] },
+    { name: 'ホエイプロテイン(エクスプロージョン)', unit: '杯', baseAmount: 1, kcal: 120, p: 21.2, f: 2.0, c: 4.3, fiber: 0, salt: 0.1, category: null, favorite: true, aliases: ['ホエイプロテイン', 'エクスプロージョン', 'ホエイ'] },
     { name: 'パルテノ ギリシャヨーグルト(無糖)', unit: 'g', baseAmount: 150, kcal: 148.5, p: 15.3, f: 6.5, c: 7.4, fiber: 0, salt: 0.15, category: 'dairy', favorite: true, aliases: ['パルテノ', 'ギリシャヨーグルト'] },
     { name: '無塩ミックスナッツ(10g)', unit: 'g', baseAmount: 10, kcal: 64, p: 2.0, f: 5.75, c: 0.75, fiber: 0.75, salt: 0, category: null, favorite: true, aliases: ['ミックスナッツ', 'ナッツ'] },
     { name: '無塩ミックスナッツ(20g)', unit: 'g', baseAmount: 20, kcal: 128, p: 4.0, f: 11.5, c: 1.5, fiber: 1.5, salt: 0, category: null, favorite: false, aliases: [] },
@@ -166,6 +166,26 @@ const CYCLE_FOODS = [
 // 後から献立に追加した食品（マイグレーションで既存ユーザーにも配る）
 const CYCLE_FOODS_V2 = [
     { name: 'ブルーベリー', unit: 'g', baseAmount: 100, kcal: 49, p: 0.5, f: 0.1, c: 12.9, fiber: 3.3, salt: 0, category: null, favorite: true, aliases: [] }
+];
+
+// 周期化の導入前から登録されていた食品のうち、より詳細な後継食品が追加されたことで
+// 品名の前方一致検索が重複してしまうもの。旧名の食品があれば後継食品へ統合する
+// （別名・お気に入りは引き継ぎ、旧名自体も別名として残すので旧名でも検索できる）
+const RENAMED_FOOD_MERGES = [
+    { from: '白米', to: '白米(炊飯後)' },
+    { from: '卵', to: '卵(全卵2個)' },
+    { from: '鶏胸肉・皮なし', to: '鶏むね肉(皮なし)150g' }
+];
+
+// 固定値の正確化・献立拡充で追加した食品（マイグレーションで既存ユーザーにも配る）
+const CYCLE_FOODS_V3 = [
+    { name: 'ひよこ豆', unit: 'g', baseAmount: 100, kcal: 136, p: 9.7, f: 1.8, c: 23.3, fiber: null, salt: null, category: null, favorite: true, aliases: [] },
+    { name: '大豆(蒸し)', unit: 'g', baseAmount: 120, kcal: 206, p: 16.4, f: 11.0, c: 15.2, fiber: null, salt: null, category: null, favorite: true, aliases: ['大豆', '蒸し大豆'] },
+    { name: '納豆', unit: '個', baseAmount: 1, kcal: 87, p: 7.1, f: 4.1, c: 6.9, fiber: null, salt: null, category: null, favorite: true, aliases: [] },
+    { name: 'オイコス いちご', unit: 'g', baseAmount: 113, kcal: 87, p: 10.2, f: 0, c: 11.0, fiber: null, salt: null, category: 'dairy', favorite: true, aliases: ['オイコスイチゴ'] },
+    { name: 'オイコス 白桃', unit: 'g', baseAmount: 113, kcal: 85, p: 10.1, f: 0, c: 10.7, fiber: null, salt: null, category: 'dairy', favorite: true, aliases: ['オイコス桃', 'オイコスもも'] },
+    // 日本食品標準成分表2020年版（八訂）「アボカド/生」の可食部100gあたりの値
+    { name: 'アボカド', unit: 'g', baseAmount: 100, kcal: 176, p: 2.1, f: 17.5, c: 7.9, fiber: 5.6, salt: 0, category: null, favorite: true, aliases: [] }
 ];
 
 const SEED_FOODS = [
@@ -242,6 +262,97 @@ class Storage {
         // シード投入・マージが終わった後に走らせる（シード分の期間にもtargetModeを補完するため）
         this.migrateCycleV1();
         this.migrateCycleV2();
+        this.migrateCycleV3();
+        this.migrateCycleV4();
+    }
+
+    // 白米/卵/鶏胸肉・皮なしなど、より詳細な後継食品ができたことで「白米」と入力すると
+    // 候補（＝ワンタップ追加ボタン）が2つ出てしまっていた重複を解消する。
+    // 旧食品は後継食品に統合（別名・お気に入りを引き継ぎ）した上で削除する。
+    // 過去の記録は品目ごとに栄養値をスナップショットして保存しているため影響を受けない
+    migrateCycleV4() {
+        const KEY = 'meal_migration_cycle_v4';
+        if (localStorage.getItem(KEY)) return;
+
+        let foods = this.getFoods();
+        RENAMED_FOOD_MERGES.forEach(({ from, to }) => {
+            const oldFood = foods.find(f => f.name === from);
+            const newFood = foods.find(f => f.name === to);
+            if (!oldFood || !newFood) return;
+            const aliases = Array.from(new Set([...(newFood.aliases || []), oldFood.name, ...(oldFood.aliases || [])]));
+            Object.assign(newFood, { aliases, favorite: newFood.favorite || oldFood.favorite });
+            foods = foods.filter(f => f.id !== oldFood.id);
+        });
+        this.setFoods(foods);
+
+        localStorage.setItem(KEY, '1');
+    }
+
+    // 固定値の正確化・献立拡充（ひよこ豆・大豆・納豆・オイコス いちご/白桃・アボカドの追加、
+    // メープル→バニラ改名、オイコス マンゴー/サバ缶/エクスプロージョンプロテインの固定値修正）を、
+    // 既存ユーザーにも一度だけ配る
+    migrateCycleV3() {
+        const KEY = 'meal_migration_cycle_v3';
+        if (localStorage.getItem(KEY)) return;
+
+        const foods = this.getFoods();
+        const byName = new Map(foods.map(f => [f.name, f]));
+        CYCLE_FOODS_V3.forEach(cf => {
+            const existing = byName.get(cf.name);
+            if (existing) {
+                const aliases = Array.from(new Set([...(existing.aliases || []), ...(cf.aliases || [])]));
+                Object.assign(existing, { ...cf, id: existing.id, favorite: existing.favorite || cf.favorite, aliases });
+            } else {
+                foods.push({ id: Utils.uid(), ...cf });
+            }
+        });
+
+        // メープルプロテインは実はエクスプロージョンと全く同じ値になっていたバグ。
+        // 栄養値には触れず、正しい名称「バニラプロテイン」に改名のみ行う
+        const maple = foods.find(f => f.name === 'メープルプロテイン');
+        if (maple) maple.name = 'バニラプロテイン';
+
+        // オイコス マンゴーは炭水化物が0gで登録されていたが誤り（正しくは10.8g）
+        const mango = foods.find(f => f.name === 'オイコス マンゴー');
+        if (mango) mango.c = 10.8;
+
+        // サバ水煮缶(低脂質タイプ)：実際の商品の値に合わせて基準量・栄養値を更新
+        // （100gあたり120kcal/P17.3/F4.8/C1.9。品名・カテゴリはそのまま）
+        const saba = foods.find(f => f.name === 'サバ水煮缶(低脂質タイプ)');
+        if (saba) Object.assign(saba, { baseAmount: 100, kcal: 120, p: 17.3, f: 4.8, c: 1.9 });
+
+        // ホエイプロテイン(エクスプロージョン)：g単位(30gあたり)だった基準を「杯」単位(1杯=30g相当)の
+        // 正しい値に更新。既存の献立に保存済みの量（g換算）も1杯=30gとして杯数に変換する
+        const PROTEIN_NAME = 'ホエイプロテイン(エクスプロージョン)';
+        const PROTEIN_GRAMS_PER_SERVING = 30;
+        const protein = foods.find(f => f.name === PROTEIN_NAME);
+        if (protein) Object.assign(protein, { unit: '杯', baseAmount: 1, kcal: 120, p: 21.2, f: 2.0, c: 4.3 });
+
+        this.setFoods(foods);
+
+        const planRaw = localStorage.getItem(STORAGE_KEYS.MEAL_PLAN);
+        if (planRaw) {
+            try {
+                const plan = JSON.parse(planRaw);
+                ['b1', 'b2'].forEach(mealKey => {
+                    const slot = plan[mealKey];
+                    if (!slot) return;
+                    [slot.fixed, slot.salmonFixed].forEach(list => {
+                        if (!Array.isArray(list)) return;
+                        list.forEach(item => {
+                            if (item.name === PROTEIN_NAME) {
+                                item.amount = Utils.round1(item.amount / PROTEIN_GRAMS_PER_SERVING);
+                            }
+                        });
+                    });
+                });
+                this.setMealPlan(plan);
+            } catch (err) {
+                // 保存済み献立が壊れている場合は初期献立側の値（杯数換算済み）で十分なのでそのままでよい
+            }
+        }
+
+        localStorage.setItem(KEY, '1');
     }
 
     // 朝食①にブルーベリーを追加。献立を編集済みのユーザーにも行き渡るよう、

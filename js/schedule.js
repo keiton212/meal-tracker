@@ -164,10 +164,10 @@ const Schedule = {
             const weekly = [];
             for (let d = 0; d < 7; d++) {
                 const t = {
-                    kcal: parseFloat(document.getElementById(`wk${d}Kcal`).value),
-                    p: parseFloat(document.getElementById(`wk${d}P`).value),
-                    f: parseFloat(document.getElementById(`wk${d}F`).value),
-                    c: parseFloat(document.getElementById(`wk${d}C`).value)
+                    kcal: parseFloat(Utils.toDecimalString(document.getElementById(`wk${d}Kcal`).value)),
+                    p: parseFloat(Utils.toDecimalString(document.getElementById(`wk${d}P`).value)),
+                    f: parseFloat(Utils.toDecimalString(document.getElementById(`wk${d}F`).value)),
+                    c: parseFloat(Utils.toDecimalString(document.getElementById(`wk${d}C`).value))
                 };
                 if ([t.kcal, t.p, t.f, t.c].some(Number.isNaN)) {
                     alert(`${this.DAY_LABELS[d]}曜日に未入力があります。7曜日すべてのkcal/P/F/Cを入力してください。`);
@@ -177,14 +177,14 @@ const Schedule = {
             }
             this.commit({ start, end, targetMode: 'weekly', weekly });
         } else {
-            const trainKcal = parseFloat(document.getElementById('periodTrainKcalInput').value);
-            const trainP = parseFloat(document.getElementById('periodTrainPInput').value);
-            const trainF = parseFloat(document.getElementById('periodTrainFInput').value);
-            const trainC = parseFloat(document.getElementById('periodTrainCInput').value);
-            const restKcal = parseFloat(document.getElementById('periodRestKcalInput').value);
-            const restP = parseFloat(document.getElementById('periodRestPInput').value);
-            const restF = parseFloat(document.getElementById('periodRestFInput').value);
-            const restC = parseFloat(document.getElementById('periodRestCInput').value);
+            const trainKcal = parseFloat(Utils.toDecimalString(document.getElementById('periodTrainKcalInput').value));
+            const trainP = parseFloat(Utils.toDecimalString(document.getElementById('periodTrainPInput').value));
+            const trainF = parseFloat(Utils.toDecimalString(document.getElementById('periodTrainFInput').value));
+            const trainC = parseFloat(Utils.toDecimalString(document.getElementById('periodTrainCInput').value));
+            const restKcal = parseFloat(Utils.toDecimalString(document.getElementById('periodRestKcalInput').value));
+            const restP = parseFloat(Utils.toDecimalString(document.getElementById('periodRestPInput').value));
+            const restF = parseFloat(Utils.toDecimalString(document.getElementById('periodRestFInput').value));
+            const restC = parseFloat(Utils.toDecimalString(document.getElementById('periodRestCInput').value));
 
             if ([trainKcal, trainP, trainF, trainC, restKcal, restP, restF, restC].some(Number.isNaN)) {
                 alert('トレ日/休み日の数値項目をすべて入力してください。');

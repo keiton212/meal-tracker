@@ -31,6 +31,16 @@
             <button class="link-btn" id="backToTodayBtn" style="display:none;">今日に戻る</button>
         </div>
         <div class="content">
+            <div class="card" style="position:relative;">
+                <div class="section-label">その他を追加（音声/手入力・複数行OK）</div>
+                <div class="field-row" style="align-items:flex-start;">
+                    <textarea id="quickAddInput" class="quick-add-textarea" inputmode="text" placeholder="例）とりむね肉100g&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
+                </div>
+                <div id="quickAddAmountPanel" class="quick-add-amount-panel"></div>
+                <button class="btn-block" id="quickAddBtn">追加する</button>
+                <div id="quickAddSuggestions" class="suggestion-list"></div>
+            </div>
+
             <div class="kcal-hero">
                 <span class="kcal-num" id="kcalNum">0</span><span class="kcal-unit">kcal</span>
                 <span class="kcal-goal" id="kcalGoal"></span>
@@ -59,15 +69,6 @@
                 <summary class="fold-summary">最近使った食品 · ワンタップ追加</summary>
                 <div id="recentFoodsList"></div>
             </details>
-
-            <div class="card" style="position:relative;">
-                <div class="section-label">その他を追加（音声/手入力・複数行OK）</div>
-                <div class="field-row" style="align-items:flex-start;">
-                    <textarea id="quickAddInput" class="quick-add-textarea" inputmode="text" placeholder="例）とりむね肉100g&#10;白米 200g&#10;おにぎり（数量を省略すると1個分を記録）"></textarea>
-                </div>
-                <button class="btn-block" id="quickAddBtn">追加する</button>
-                <div id="quickAddSuggestions" class="suggestion-list"></div>
-            </div>
 
             <div class="card">
                 <div class="section-label">今週のクオータ（主菜の回数）</div>

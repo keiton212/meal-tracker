@@ -136,6 +136,11 @@ const Main = {
             return;
         }
 
+        // 新しい語を入力中＝選択済みのグラム入力パネルは役目を終えたので閉じる。
+        // （空欄のときは早期returnで素通りするため、選択直後にtextareaから語を取り除いた
+        //   結果としての空プレフィックスではここに到達せず、パネルを誤って消さない）
+        document.getElementById('quickAddAmountPanel').innerHTML = '';
+
         const matches = storage.findFoodsByPrefix(prefix);
         if (!matches.length) {
             container.innerHTML = '';
@@ -144,7 +149,7 @@ const Main = {
 
         container.innerHTML =
             '<span class="suggestion-label">候補</span>' +
-            matches.map(f => `<button type="button" class="suggestion-chip" data-name="${f.name}">${f.name}</button>`).join('');
+            matches.map(f => `<button type="button" class="suggestion-chip" data-food-id="${f.id}">${f.name}</button>`).join('');
         // 候補一覧は独立したオーバーレイ（position:absolute）なので、消しても
         // 他の要素（追加するボタンなど）の位置は動かない。誤タップの心配なく即座に消してよい
         container.querySelectorAll('.suggestion-chip').forEach(chip => {
@@ -152,18 +157,7 @@ const Main = {
             const select = () => {
                 if (handled) return; // pointerdown/clickの二重発火を防ぐ
                 handled = true;
-                const name = chip.dataset.name;
-                this._suppressAutocomplete = true;
-                // setRangeTextはvalueを丸ごと入れ替えないため、IME・undo履歴の状態を壊しにくい
-                if (typeof textarea.setRangeText === 'function') {
-                    textarea.setRangeText(name, lineStart, cursor, 'end');
-                } else {
-                    textarea.value = value.slice(0, lineStart) + name + value.slice(cursor);
-                    textarea.setSelectionRange(lineStart + name.length, lineStart + name.length);
-                    this._suppressAutocomplete = false; // valueの直接代入はinputを発火しないため
-                }
-                textarea.focus();
-                container.innerHTML = '';
+                this.selectSuggestion(chip.dataset.foodId, lineStart, cursor);
             };
             // pointerdownの時点でpreventDefaultし、textareaからフォーカスが外れる前に確定させる
             // （clickだけに頼ると、環境によってキーボードが一旦閉じてしまうことがあるため）
@@ -172,10 +166,58 @@ const Main = {
         });
     },
 
+    // 候補をタップしたら、その場でグラムを入力できる専用パネルを開く。
+    // iOSでは一度キーボードを閉じてからtextareaへ再フォーカスしても
+    // ソフトキーボードが開き直らないことがあるため、textareaへの入力継続には頼らず、
+    // タップの勢いのまま新しく生成した入力欄へ直接フォーカスして数量入力キーボードを開かせる
+    selectSuggestion(foodId, lineStart, cursor) {
+        const textarea = document.getElementById('quickAddInput');
+        const suggestions = document.getElementById('quickAddSuggestions');
+        const panel = document.getElementById('quickAddAmountPanel');
+        const food = storage.getFoods().find(f => f.id === foodId);
+        if (!food) return;
+
+        // 選んだ語はtextareaから取り除く（この後は専用パネルの方で記録するため）。
+        // setRangeTextがinputイベントを発火するかは環境によって当てにならないため、
+        // 抑制フラグには頼らず、除去後に空になった行では renderSuggestions が
+        // 自然に早期returnする（=候補もパネルも誤って消さない）ことで安全にしている
+        const value = textarea.value;
+        if (typeof textarea.setRangeText === 'function') {
+            textarea.setRangeText('', lineStart, cursor, 'end');
+        } else {
+            textarea.value = value.slice(0, lineStart) + value.slice(cursor);
+        }
+        suggestions.innerHTML = '';
+
+        const amount = storage.getLastAmountForFood(food.id) || food.baseAmount;
+        panel.innerHTML = this.amountRowHtml(food, amount) +
+            '<button class="btn-block" id="suggestionAddBtn">追加する</button>';
+        this.bindAmountRows(panel);
+
+        const input = panel.querySelector('.menu-amount-input');
+        input.focus();
+        input.select();
+
+        document.getElementById('suggestionAddBtn').addEventListener('click', () => {
+            const amt = parseFloat(Utils.toDecimalString(panel.querySelector('.menu-amount-input').value));
+            if (Number.isNaN(amt) || amt <= 0) { alert('量を正しく入力してください。'); return; }
+            const entry = this.addFoodLog(food, amt);
+            if (!entry) return;
+            panel.innerHTML = '';
+            textarea.value = '';
+            this.renderToday();
+            this.showUndoToast([entry]);
+        });
+    },
+
     // テキスト全体から、登録済みの食品名・別名を辞書として直接検出する。
     // 区切り文字（空白・改行・カンマ・読点・区切りなし）に依存しないため誤認識が起きにくい。
     // 各マッチの直後～次のマッチまでの間にある数値をその食品の数量として扱い、数値が無ければ基準量を使う。
-    extractEntries(text) {
+    // 全角数字・句点「。」・読点「、」を含む小数点表記のゆれ（音声入力の書き起こし等）は先に正規化しておく。
+    // 「、」はここでは複数品目の自然な区切りとしても使われるが、数値の直後に来ない限り
+    // 小数点としての変換が悪さをすることはないため、1行入力(parseLine)とは異なりここでも変換する
+    extractEntries(rawText) {
+        const text = Utils.toDecimalString(rawText);
         const foods = storage.getFoods();
         const termToFood = new Map();
         foods.forEach(food => {
@@ -229,6 +271,7 @@ const Main = {
 
         textarea.value = '';
         document.getElementById('quickAddSuggestions').innerHTML = '';
+        document.getElementById('quickAddAmountPanel').innerHTML = '';
         this.renderToday();
 
         if (unmatchedLines.length) {
@@ -337,7 +380,7 @@ const Main = {
             const foods = storage.getFoods();
             const added = [];
             panel.querySelectorAll('.menu-item').forEach(item => {
-                const amount = parseFloat(item.querySelector('.menu-amount-input').value);
+                const amount = parseFloat(Utils.toDecimalString(item.querySelector('.menu-amount-input').value));
                 const food = foods.find(f => f.id === item.dataset.foodId);
                 if (!food || Number.isNaN(amount) || amount <= 0) return;
                 const entry = this.addFoodLog(food, amount);
@@ -360,7 +403,7 @@ const Main = {
         const foods = storage.getFoods();
         const planned = { kcal: 0, p: 0, f: 0, c: 0 };
         document.querySelectorAll('#mealPanel .menu-item').forEach(item => {
-            const amount = parseFloat(item.querySelector('.menu-amount-input').value);
+            const amount = parseFloat(Utils.toDecimalString(item.querySelector('.menu-amount-input').value));
             const food = foods.find(f => f.id === item.dataset.foodId);
             if (!food || Number.isNaN(amount) || amount <= 0) return;
             const n = storage.calcNutrients(food, amount);
@@ -423,7 +466,7 @@ const Main = {
         list.querySelectorAll('.menu-add-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const item = list.querySelector(`.menu-item[data-food-id="${btn.dataset.foodId}"]`);
-                const amount = parseFloat(item.querySelector('.menu-amount-input').value);
+                const amount = parseFloat(Utils.toDecimalString(item.querySelector('.menu-amount-input').value));
                 const food = storage.getFoods().find(f => f.id === btn.dataset.foodId);
                 if (!food || Number.isNaN(amount) || amount <= 0) return;
                 const entry = this.addFoodLog(food, amount);
@@ -464,7 +507,7 @@ const Main = {
                 const item = btn.closest('.menu-item');
                 const input = item.querySelector('.menu-amount-input');
                 const step = parseFloat(item.dataset.step) || 1;
-                const current = parseFloat(input.value) || 0;
+                const current = parseFloat(Utils.toDecimalString(input.value)) || 0;
                 input.value = Math.max(0, Utils.round1(current + step * parseInt(btn.dataset.dir, 10)));
                 this.refreshMenuNutrients(item);
                 this.updateProjection();
@@ -482,7 +525,7 @@ const Main = {
     refreshMenuNutrients(item) {
         if (!item) return;
         const food = storage.getFoods().find(f => f.id === item.dataset.foodId);
-        const amount = parseFloat(item.querySelector('.menu-amount-input').value);
+        const amount = parseFloat(Utils.toDecimalString(item.querySelector('.menu-amount-input').value));
         const target = item.querySelector('.menu-nutrients');
         if (!food || Number.isNaN(amount)) { target.textContent = ''; return; }
         const n = storage.calcNutrients(food, amount);
@@ -576,7 +619,7 @@ const Main = {
                 const panel = btn.closest('.log-edit-panel');
                 const input = panel.querySelector('.quick-edit-input');
                 const step = parseFloat(panel.dataset.step) || 1;
-                const current = parseFloat(input.value) || parseFloat(panel.dataset.defaultAmount) || 0;
+                const current = parseFloat(Utils.toDecimalString(input.value)) || parseFloat(panel.dataset.defaultAmount) || 0;
                 input.value = Math.max(0, Utils.round1(current + step * parseInt(btn.dataset.dir, 10)));
             });
         });
@@ -584,7 +627,7 @@ const Main = {
         list.querySelectorAll('.log-edit-save').forEach(btn => {
             btn.addEventListener('click', () => {
                 const panel = btn.closest('.log-edit-panel');
-                const inputVal = panel.querySelector('.quick-edit-input').value.trim();
+                const inputVal = Utils.toDecimalString(panel.querySelector('.quick-edit-input').value).trim();
                 const amount = inputVal ? parseFloat(inputVal) : parseFloat(panel.dataset.defaultAmount);
                 if (Number.isNaN(amount) || amount <= 0) return;
                 storage.updateLogEntryAmount(today, btn.dataset.id, amount);
