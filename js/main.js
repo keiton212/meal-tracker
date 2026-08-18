@@ -140,6 +140,7 @@ const Main = {
         // （空欄のときは早期returnで素通りするため、選択直後にtextareaから語を取り除いた
         //   結果としての空プレフィックスではここに到達せず、パネルを誤って消さない）
         document.getElementById('quickAddAmountPanel').innerHTML = '';
+        this.setQuickAddBtnVisible(true);
 
         const matches = storage.findFoodsByPrefix(prefix);
         if (!matches.length) {
@@ -193,6 +194,9 @@ const Main = {
         panel.innerHTML = this.amountRowHtml(food, amount) +
             '<button class="btn-block" id="suggestionAddBtn">追加する</button>';
         this.bindAmountRows(panel);
+        // パネル側の「追加する」で記録するため、メインの「追加する」ボタンは
+        // 隠しておく（両方表示すると同じラベルのボタンが2つ並んでしまうため）
+        this.setQuickAddBtnVisible(false);
 
         const input = panel.querySelector('.menu-amount-input');
         input.focus();
@@ -204,10 +208,17 @@ const Main = {
             const entry = this.addFoodLog(food, amt);
             if (!entry) return;
             panel.innerHTML = '';
+            this.setQuickAddBtnVisible(true);
             textarea.value = '';
             this.renderToday();
             this.showUndoToast([entry]);
         });
+    },
+
+    // 候補選択時に開くグラム入力パネルは自前の「追加する」ボタンを持つため、
+    // 開いている間はメインの「追加する」ボタンを隠して重複表示を防ぐ
+    setQuickAddBtnVisible(visible) {
+        document.getElementById('quickAddBtn').style.display = visible ? '' : 'none';
     },
 
     // テキスト全体から、登録済みの食品名・別名を辞書として直接検出する。
