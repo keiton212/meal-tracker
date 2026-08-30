@@ -14,6 +14,7 @@ const Schedule = {
 
     init() {
         document.getElementById('addPeriodBtn').addEventListener('click', () => this.add());
+        document.getElementById('bulkAddPeriodBtn').addEventListener('click', () => this.bulkAdd());
         document.getElementById('cancelPeriodEditBtn').addEventListener('click', () => {
             this.cancelEdit();
             this.render();
@@ -145,6 +146,99 @@ const Schedule = {
     restDaysLabel() {
         const days = storage.getRestDays().slice().sort();
         return days.length ? days.map(d => this.DAY_LABELS[d]).join('・') : 'なし';
+    },
+
+    // まとめて貼り付け入力を期間の配列にパースする。
+    // 見出し行「## 開始日〜終了日」（#は省略可）＋kcal/P/F/Cの箇条書き数行を1期間として扱う。
+    // 数値が「2,300〜2,400」のように範囲指定された場合は中央値を使う
+    parseBulkText(text) {
+        const dateRe = /^#{0,6}\s*(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})日?\s*[〜~\-ー]\s*(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})日?/;
+        const pad = n => String(n).padStart(2, '0');
+        const blocks = [];
+        let cur = null;
+        Utils.toHalfWidth(text).split(/\r?\n/).forEach(raw => {
+            const line = raw.trim();
+            if (!line) return;
+            const dm = line.match(dateRe);
+            if (dm) {
+                if (cur) blocks.push(cur);
+                cur = {
+                    start: `${dm[1]}-${pad(dm[2])}-${pad(dm[3])}`,
+                    end: `${dm[4]}-${pad(dm[5])}-${pad(dm[6])}`,
+                    kcal: null, p: null, f: null, c: null,
+                    raw: line
+                };
+                return;
+            }
+            if (!cur) return;
+            const v = this.parseBulkValueLine(line);
+            if (v) cur[v.field] = v.value;
+        });
+        if (cur) blocks.push(cur);
+        return blocks;
+    },
+
+    // 範囲指定（a〜b）は中央値、単一値ならそのままの数値を返す
+    rangeMid(a, b) {
+        const na = parseFloat(String(a).replace(/,/g, ''));
+        if (b === undefined) return na;
+        const nb = parseFloat(String(b).replace(/,/g, ''));
+        return Utils.round1((na + nb) / 2);
+    },
+
+    // 1行から「kcal」または「P/F/C：数値(〜数値)g」を読み取る
+    parseBulkValueLine(line) {
+        const t = line.replace(/^[-・*]\s*/, '');
+        let m = t.match(/^([\d,]+(?:\.\d+)?)\s*(?:[〜~\-ー]\s*([\d,]+(?:\.\d+)?))?\s*kcal/i);
+        if (m) return { field: 'kcal', value: this.rangeMid(m[1], m[2]) };
+        m = t.match(/^([PFC])\s*[:：]?\s*([\d,]+(?:\.\d+)?)\s*(?:[〜~\-ー]\s*([\d,]+(?:\.\d+)?))?\s*g?/i);
+        if (m) {
+            const field = { P: 'p', F: 'f', C: 'c' }[m[1].toUpperCase()];
+            return { field, value: this.rangeMid(m[2], m[3]) };
+        }
+        return null;
+    },
+
+    // まとめて貼り付け入力から期間を一括登録する
+    bulkAdd() {
+        const input = document.getElementById('bulkPeriodInput');
+        const blocks = this.parseBulkText(input.value);
+        if (!blocks.length) {
+            alert('貼り付けたテキストから期間を読み取れませんでした。\n「## 開始日〜終了日」の見出しとkcal/P/F/Cの箇条書きの形式を確認してください。');
+            return;
+        }
+
+        const valid = [];
+        const invalid = [];
+        blocks.forEach(b => {
+            const nums = [b.kcal, b.p, b.f, b.c];
+            if (b.start > b.end || nums.some(n => n === null || Number.isNaN(n))) invalid.push(b);
+            else valid.push(b);
+        });
+
+        if (!valid.length) {
+            alert('kcal・P・F・Cのいずれかが読み取れない期間があります。形式を確認してください。');
+            return;
+        }
+
+        valid.forEach(b => {
+            storage.addPeriod({
+                start: b.start, end: b.end, targetMode: 'trainRest',
+                trainKcal: b.kcal, trainP: b.p, trainF: b.f, trainC: b.c,
+                restKcal: b.kcal, restP: b.p, restF: b.f, restC: b.c
+            });
+        });
+
+        input.value = '';
+        this.render();
+        Main.renderToday();
+
+        let msg = `${valid.length}件の期間を追加しました。`;
+        if (invalid.length) {
+            msg += `\n読み取れなかった期間が${invalid.length}件あります：\n` +
+                invalid.map(b => b.raw || `${b.start}〜${b.end}`).join('\n');
+        }
+        alert(msg);
     },
 
     add() {

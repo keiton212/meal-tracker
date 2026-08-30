@@ -80,6 +80,8 @@
                 <div class="section-label">今日の記録</div>
                 <div id="todayLogList"></div>
             </div>
+
+            <div class="backup-status" id="homeBackupStatus"></div>
         </div>
         <div class="fab" id="openAddFoodBtn">+</div>
     </div>
@@ -202,6 +204,8 @@
                     定期的（週1回など）にバックアップを取ることを強くおすすめします。
                 </div>
                 <button class="btn-block" id="backupSaveBtn" style="margin-top:10px;">💾 バックアップファイルを保存</button>
+                <div class="backup-status" id="backupScreenStatus" style="margin-top:10px;"></div>
+                <div class="food-meta" id="persistStatus" style="margin-top:6px;"></div>
             </div>
             <div class="card">
                 <div class="section-label">バックアップから復元</div>
@@ -261,6 +265,12 @@
                 </div>
                 <div class="food-meta" style="margin-top:6px;">チェックした曜日が「休み日」として扱われます</div>
             </div>
+            <div class="card">
+                <div class="section-label">まとめて貼り付けで追加</div>
+                <textarea id="bulkPeriodInput" class="paste-textarea" style="height:160px;" placeholder="## 2026/8/31〜2026/9/13&#10;- 2,300〜2,400 kcal&#10;- P：135g&#10;- F：60g&#10;- C：305〜330g&#10;&#10;## 2026/9/14〜2026/11/8&#10;- 2,500 kcal&#10;- P：135g&#10;- F：60g&#10;- C：355g"></textarea>
+                <button class="btn-block" id="bulkAddPeriodBtn">📋 まとめて追加</button>
+                <div class="food-meta" style="margin-top:6px;">「開始日〜終了日」の見出し＋kcal/P/F/Cの箇条書きを複数期間分まとめて貼り付けられます。数値は「2,300〜2,400」のように範囲指定すると中央値で登録されます。トレ日/休み日は同じ値になります（区別が必要な期間は下のフォームで個別に編集してください）。</div>
+            </div>
             <div class="card" id="periodFormCard">
                 <div class="section-label" id="periodFormLabel">新しい期間を追加</div>
                 <div class="form-row">
@@ -315,6 +325,20 @@
             </div>
             <button class="btn-block" id="copyExportBtn">📋 このテキストをコピーする</button>
             <div class="food-meta">「この1週間の食事内容から改善点を教えて」とChatGPT/Claudeに貼り付けるだけで相談できます。</div>
+        </div>
+    </div>
+
+    <!-- データが空の状態で起動したときの復元導線（初回起動 or iOSによる消失） -->
+    <div id="recoveryOverlay" class="recovery-overlay" hidden>
+        <div class="recovery-box">
+            <div class="recovery-title">⚠ 記録データが見つかりません</div>
+            <div class="recovery-text">
+                保存されていた記録・体重・固定食品が読み込めませんでした。<br><br>
+                <b>以前このアプリを使っていた場合</b>、iPhoneが保存領域を消してしまった可能性があります。
+                バックアップファイルから元に戻せます。
+            </div>
+            <button class="btn-block" id="recoveryRestoreBtn">💾 バックアップから復元する</button>
+            <button class="btn-block secondary" id="recoveryFreshBtn" style="margin-top:8px;">初めて使うので、このまま開始</button>
         </div>
     </div>
 

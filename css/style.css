@@ -539,3 +539,55 @@ button, input, select, textarea {
 }
 .tab-item span { font-size: 19px; }
 .tab-item.active { color: var(--accent); }
+
+/* ---------- 最終バックアップの表示 ---------- */
+.backup-status {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 0;
+}
+
+.backup-status.stale {
+    color: var(--crit);
+    background: var(--crit-soft);
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+/* ---------- データが空で起動したときの復元導線 ---------- */
+.recovery-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(20, 22, 20, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.recovery-overlay[hidden] { display: none; }
+
+.recovery-box {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 20px 18px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .45);
+}
+
+.recovery-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--crit);
+    margin-bottom: 10px;
+}
+
+.recovery-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink);
+    margin-bottom: 16px;
+}

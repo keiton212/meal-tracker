@@ -228,6 +228,12 @@ class Storage {
     }
 
     initializeStorage() {
+        // シードを書き込む「前」に、保存領域が空の状態で起動したかを記録しておく。
+        // iOSがLocalStorageを破棄した場合と、本当の初回起動は見分けがつかないため、
+        // 黙って初期データで始めず、起動時にユーザーへ復元の導線を出す（js/backup.js）
+        this.wasEmptyOnBoot = Object.values(STORAGE_KEYS)
+            .every(key => localStorage.getItem(key) === null);
+
         if (!localStorage.getItem(STORAGE_KEYS.FOODS)) {
             localStorage.setItem(STORAGE_KEYS.FOODS, JSON.stringify(SEED_FOODS));
         } else {
