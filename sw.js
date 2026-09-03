@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-tracker-v20';
+const CACHE_NAME = 'meal-tracker-v21';
 const urlsToCache = [
     './',
     './index.html',
@@ -14,6 +14,8 @@ const urlsToCache = [
     './js/graph.js',
     './js/weight.js',
     './js/export.js',
+    './js/cloud-config.js',
+    './js/cloud-sync.js',
     './js/backup.js',
     './manifest.json'
 ];

@@ -81,6 +81,7 @@
                 <div id="todayLogList"></div>
             </div>
 
+            <div class="cloud-status" id="homeCloudStatus" data-state="pending">クラウド保存を確認中…</div>
             <div class="backup-status" id="homeBackupStatus"></div>
         </div>
         <div class="fab" id="openAddFoodBtn">+</div>
@@ -196,6 +197,24 @@
             <h2>データのバックアップ</h2>
         </div>
         <div class="content">
+            <div class="card cloud-card">
+                <div class="section-label">☁ クラウド自動保存</div>
+                <div id="cloudSyncStatus" class="cloud-status" data-state="pending">クラウド保存を確認中…</div>
+                <div class="food-meta">
+                    記録は暗号化してCloudflareにも自動保存されます。端末を紛失しても、下の復旧コードで元に戻せます。
+                </div>
+                <div class="recovery-code" id="cloudRecoveryCode">未作成</div>
+                <div class="food-meta recovery-saved" id="cloudRecoverySaved"></div>
+                <div class="form-row">
+                    <button class="btn-block" id="cloudRecoverySaveBtn">復旧コードをファイル保存</button>
+                    <button class="btn-block secondary" id="cloudRecoveryCopyBtn">コピー</button>
+                </div>
+                <div class="section-label" style="margin-top:18px;">別の端末・消失後に復元</div>
+                <input type="text" id="cloudRecoveryInput" class="text-input" autocomplete="off" autocapitalize="off"
+                    spellcheck="false" placeholder="復旧コードを貼り付け">
+                <button class="btn-block secondary" id="cloudRecoveryConnectBtn" style="margin-top:8px;">クラウドから復元する</button>
+                <div id="cloudRecoveryMessage" class="food-meta" style="margin-top:6px;"></div>
+            </div>
             <div class="card">
                 <div class="section-label">バックアップを保存</div>
                 <div class="food-meta">
@@ -337,6 +356,7 @@
                 <b>以前このアプリを使っていた場合</b>、iPhoneが保存領域を消してしまった可能性があります。
                 バックアップファイルから元に戻せます。
             </div>
+            <button class="btn-block" id="recoveryCloudBtn">☁ 復旧コードでクラウドから戻す</button>
             <button class="btn-block" id="recoveryRestoreBtn">💾 バックアップから復元する</button>
             <button class="btn-block secondary" id="recoveryFreshBtn" style="margin-top:8px;">初めて使うので、このまま開始</button>
         </div>
@@ -361,6 +381,8 @@
     <script src="js/graph.js"></script>
     <script src="js/weight.js"></script>
     <script src="js/export.js"></script>
+    <script src="js/cloud-config.js"></script>
+    <script src="js/cloud-sync.js"></script>
     <script src="js/backup.js"></script>
 </body>
 </html>

@@ -7,7 +7,10 @@ const Backup = {
         document.getElementById('backupSaveBtn').addEventListener('click', () => this.save());
         document.getElementById('backupRestoreInput').addEventListener('change', e => this.restore(e));
         document.getElementById('recoveryRestoreBtn').addEventListener('click', () => this.openRestoreFromRecovery());
-        document.getElementById('recoveryFreshBtn').addEventListener('click', () => this.dismissRecovery());
+        document.getElementById('recoveryFreshBtn').addEventListener('click', async () => {
+            this.dismissRecovery();
+            await CloudSync.startFreshVault();
+        });
 
         this.requestPersistentStorage();
 
@@ -29,7 +32,8 @@ const Backup = {
             const raw = localStorage.getItem(key);
             if (raw !== null) data[key] = JSON.parse(raw);
         });
-        return { app: 'MealLog', savedAt: new Date().toISOString(), data };
+        const cloudRecoveryCode = typeof CloudSync !== 'undefined' ? CloudSync.getRecoveryCode() : '';
+        return { app: 'MealLog', savedAt: new Date().toISOString(), cloudRecoveryCode, data };
     },
 
     // ファイル名には日付だけでなく時刻も入れる。同じ日に2回保存したときに
@@ -149,6 +153,10 @@ const Backup = {
                 keysToRestore.forEach(key => {
                     localStorage.setItem(key, JSON.stringify(data[key]));
                 });
+                const cloudRecoveryCode = String(payload.cloudRecoveryCode || '');
+                if (/^[a-f0-9]{64}$/i.test(cloudRecoveryCode)) {
+                    localStorage.setItem(CLOUD_RECOVERY_KEY, cloudRecoveryCode.toLowerCase());
+                }
                 msg.textContent = '✓ 復元しました。アプリを再読み込みします…';
                 setTimeout(() => location.reload(), 1000);
             } catch (err) {
