@@ -1,8 +1,11 @@
 import { handleInbox } from './inbox.js';
+import { OAuthProvider } from '@cloudflare/workers-oauth-provider';
+import { mcpHandler } from './mcp.js';
+import { handleAuthorize, handlePairing, allowedRedirect, PRODUCTION_ORIGIN, SCOPE } from './oauth.js';
 
 const MAX_ENCRYPTED_PAYLOAD_BYTES = 900_000;
 
-export default {
+const appHandler = {
     async fetch(request, env) {
         const url = new URL(request.url);
         const cors = corsHeaders(request, env, url.origin);
@@ -13,6 +16,12 @@ export default {
 
         if (url.pathname === '/api/health' && request.method === 'GET') {
             return json({ ok: true }, 200, cors);
+        }
+
+        if (url.pathname === '/oauth/authorize') return handleAuthorize(request, env);
+        if (url.pathname === '/v1/pairing') {
+            try { return await handlePairing(request, env, cors); }
+            catch (error) { return json({ error: isHttpError(error) ? error.message : 'internal_error' }, isHttpError(error) ? error.status : 500, cors); }
         }
 
         if (url.pathname.startsWith('/v1/')) {
@@ -39,6 +48,54 @@ export default {
         }
 
         return env.ASSETS.fetch(request);
+    }
+};
+
+export default {
+    async scheduled(_event, env) {
+        // Inbox data is transient; encrypted backups are deliberately untouched.
+        await env.DB.batch([
+            env.DB.prepare('DELETE FROM inbox_items WHERE created_at < unixepoch() - 604800'),
+            env.DB.prepare('DELETE FROM meal_requests WHERE created_at < unixepoch() - 604800'),
+            env.DB.prepare('DELETE FROM mcp_pairing_codes WHERE expires_at < unixepoch()'),
+            env.DB.prepare('DELETE FROM mcp_consent_sessions WHERE expires_at < unixepoch()')
+        ]);
+    },
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+        const integration = url.pathname.startsWith('/mcp') || url.pathname.startsWith('/oauth/') || url.pathname.startsWith('/.well-known/');
+        if (!integration) return appHandler.fetch(request, env, ctx);
+        const origin = env.MCP_ORIGIN || PRODUCTION_ORIGIN;
+        const requestOrigin = request.headers.get('Origin');
+        if (requestOrigin && ![origin, 'https://chatgpt.com'].includes(requestOrigin)) return new Response('Forbidden origin', { status: 403 });
+        if (request.body) {
+            const reader = request.body.getReader();
+            let size = 0;
+            const chunks = [];
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                size += value.byteLength;
+                if (size > 65536) { await reader.cancel(); return new Response('Request too large', { status: 413 }); }
+                chunks.push(value);
+            }
+            request = new Request(request, { body: new Blob(chunks) });
+        }
+        const provider = new OAuthProvider({
+            apiRoute: '/mcp', apiHandler: mcpHandler, defaultHandler: appHandler,
+            authorizeEndpoint: '/oauth/authorize', tokenEndpoint: '/oauth/token',
+            clientRegistrationEndpoint: '/oauth/register',
+            clientIdMetadataDocumentEnabled: true, allowPlainPKCE: false,
+            scopesSupported: [SCOPE], accessTokenTTL: 3600, refreshTokenTTL: 2592000,
+            resourceMetadata: { resource: `${origin}/mcp`, authorization_servers: [origin], scopes_supported: [SCOPE], resource_name: 'MealLog' },
+            clientRegistrationCallback: ({ clientMetadata }) => {
+                if (!Array.isArray(clientMetadata.redirect_uris) || !clientMetadata.redirect_uris.length || !clientMetadata.redirect_uris.every(allowedRedirect)) {
+                    return { description: 'Only ChatGPT OAuth callbacks are allowed.' };
+                }
+            }
+        });
+        try { return await provider.fetch(request, env, ctx); }
+        catch { return json({ error: 'temporarily_unavailable' }, 503, { 'Cache-Control': 'no-store' }); }
     }
 };
 

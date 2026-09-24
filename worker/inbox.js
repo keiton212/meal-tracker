@@ -36,15 +36,27 @@ export async function handleInbox(request, env, url, cors) {
 
 async function addMeals(request, env, inboxId, cors) {
     const body = await readJson(request);
-    const items = normalizeRequest(body);
-    const pendingCount = await countPending(env.DB, inboxId);
-    if (pendingCount + items.length > MAX_PENDING) {
-        return json({ error: 'inbox_full' }, 429, cors);
-    }
+    const result = await enqueueMeals(body, env, inboxId);
+    return json(result, 200, cors);
+}
 
+export async function enqueueMeals(body, env, inboxId, requestId) {
+    const items = normalizeRequest(body);
+    let bodyHash;
+    if (requestId) {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(body)));
+        bodyHash = base64UrlBytes(new Uint8Array(digest));
+        const old = await env.DB.prepare('SELECT body_hash, result FROM meal_requests WHERE inbox_id = ? AND request_id = ?').bind(inboxId, requestId).first();
+        if (old) {
+            if (old.body_hash !== bodyHash) throw new HttpError(409, 'request_id_conflict');
+            return { ...JSON.parse(old.result), duplicate: true, pushed: false };
+        }
+    }
     await env.DB.prepare(
         `DELETE FROM inbox_items WHERE inbox_id = ? AND created_at < ?`
     ).bind(inboxId, Math.floor(Date.now() / 1000) - PENDING_TTL_SECONDS).run();
+    const pendingCount = await countPending(env.DB, inboxId);
+    if (pendingCount + items.length > MAX_PENDING) throw new HttpError(429, 'inbox_full');
 
     const created = [];
     const statements = items.map(item => {
@@ -54,16 +66,26 @@ async function addMeals(request, env, inboxId, cors) {
             `INSERT INTO inbox_items (id, inbox_id, payload, created_at) VALUES (?, ?, ?, unixepoch())`
         ).bind(id, inboxId, JSON.stringify(item));
     });
-    await env.DB.batch(statements);
-
-    const pushed = await notify(env, inboxId, created);
-    return json({ ok: true, ids: created.map(item => item.id), pushed }, 200, cors);
+    const result = { ok: true, ids: created.map(item => item.id), meals: created, status: 'queued', duplicate: false };
+    if (requestId) statements.unshift(env.DB.prepare('INSERT INTO meal_requests (inbox_id, request_id, body_hash, result) VALUES (?, ?, ?, ?)').bind(inboxId, requestId, bodyHash, JSON.stringify(result)));
+    try { await env.DB.batch(statements); }
+    catch (error) {
+        if (requestId) {
+            const old = await env.DB.prepare('SELECT body_hash, result FROM meal_requests WHERE inbox_id = ? AND request_id = ?').bind(inboxId, requestId).first();
+            if (old?.body_hash === bodyHash) return { ...JSON.parse(old.result), duplicate: true, pushed: false };
+            if (old) throw new HttpError(409, 'request_id_conflict');
+        }
+        if (String(error.message).includes('inbox_full')) throw new HttpError(429, 'inbox_full');
+        throw error;
+    }
+    const pushed = await notify(env, inboxId);
+    return { ...result, pushed };
 }
 
 async function listPending(db, inboxId, cors) {
     const rows = await db.prepare(
         `SELECT id, payload, created_at AS createdAt
-         FROM inbox_items WHERE inbox_id = ? ORDER BY created_at ASC`
+         FROM inbox_items WHERE inbox_id = ? AND created_at >= unixepoch() - 604800 ORDER BY created_at ASC`
     ).bind(inboxId).all();
     const meals = (rows.results || []).map(row => ({ id: row.id, createdAt: row.createdAt, ...JSON.parse(row.payload) }));
     return json({ meals }, 200, cors);
@@ -89,6 +111,7 @@ async function saveSubscription(request, db, inboxId, cors) {
     if (typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 2000) {
         return json({ error: 'invalid_subscription' }, 400, cors);
     }
+    if (!isPushEndpoint(endpoint)) return json({ error: 'invalid_push_endpoint' }, 400, cors);
     if (typeof p256dh !== 'string' || typeof auth !== 'string' || p256dh.length > 200 || auth.length > 200) {
         return json({ error: 'invalid_subscription' }, 400, cors);
     }
@@ -211,45 +234,49 @@ async function countPending(db, inboxId) {
     return Number(row?.count || 0);
 }
 
-async function notify(env, inboxId, created) {
-    const row = await env.DB.prepare(
-        `SELECT subscription FROM push_subscriptions WHERE inbox_id = ?`
-    ).bind(inboxId).first();
-    if (!row) return false;
-    let subscription;
+async function notify(env, inboxId) {
     try {
-        subscription = JSON.parse(row.subscription);
-    } catch {
-        return false;
-    }
-    try {
+        const row = await env.DB.prepare(
+            `SELECT subscription FROM push_subscriptions WHERE inbox_id = ?`
+        ).bind(inboxId).first();
+        if (!row) return false;
+        const subscription = JSON.parse(row.subscription);
         const keys = await getOrCreateVapid(env.DB);
-        const response = await sendTickle(subscription.endpoint, keys);
+        if (!isPushEndpoint(subscription.endpoint)) return false;
+        const response = await sendTickle(subscription.endpoint, keys, env.VAPID_SUBJECT || 'https://meal-tracker-cloud.nest-task-manager.workers.dev');
         if (response.status === 404 || response.status === 410) {
             await env.DB.prepare(`DELETE FROM push_subscriptions WHERE inbox_id = ?`).bind(inboxId).run();
             return false;
         }
         return response.ok || response.status === 201;
-    } catch (error) {
-        console.error('push failed', error);
+    } catch {
+        console.error('push failed');
         return false;
     }
 }
 
-async function sendTickle(endpoint, keys) {
-    const jwt = await vapidJwt(endpoint, keys.privateKey, envSubject());
+export function isPushEndpoint(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash &&
+            (url.hostname === 'web.push.apple.com' || url.hostname.endsWith('.push.apple.com') ||
+             url.hostname === 'fcm.googleapis.com' || url.hostname === 'updates.push.services.mozilla.com' ||
+             url.hostname.endsWith('.notify.windows.com'));
+    } catch { return false; }
+}
+
+async function sendTickle(endpoint, keys, subject) {
+    const jwt = await vapidJwt(endpoint, keys.privateKey, subject);
     return fetch(endpoint, {
         method: 'POST',
+        redirect: 'error',
+        signal: AbortSignal.timeout(8000),
         headers: {
             'TTL': '86400',
             'Urgency': 'high',
             'Authorization': `vapid t=${jwt}, k=${keys.publicKey}`
         }
     });
-}
-
-function envSubject() {
-    return 'mailto:meallog@localhost';
 }
 
 async function vapidJwt(endpoint, privateKey, subject) {
@@ -297,7 +324,7 @@ async function loadVapid(row) {
     return { publicKey: row.publicKey, privateKey };
 }
 
-async function authenticatedInboxId(request) {
+export async function authenticatedInboxId(request) {
     const authorization = request.headers.get('Authorization') || '';
     if (!authorization.startsWith('Bearer ')) throw new HttpError(401, 'unauthorized');
     const token = authorization.slice(7).trim();

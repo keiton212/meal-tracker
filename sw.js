@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-tracker-v22';
+const CACHE_NAME = 'meal-tracker-v23';
 const urlsToCache = [
     './',
     './index.html',
@@ -69,6 +69,9 @@ self.addEventListener('activate', event => {
 // ネットワーク優先：オンライン時は常に最新版を取得し、オフライン時のみキャッシュを使う
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
+    const url = new URL(event.request.url);
+    // Never cache authenticated responses, OAuth pages, or API errors as app HTML.
+    if (url.origin !== self.location.origin || /^\/(api|v1|mcp|oauth|\.well-known)(\/|$)/.test(url.pathname) || event.request.headers.has('Authorization')) return;
 
     event.respondWith(
         fetch(event.request, { cache: 'no-store' })

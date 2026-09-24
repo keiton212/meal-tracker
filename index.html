@@ -356,10 +356,11 @@
         </div>
         <div class="content">
             <div class="card">
-                <div class="section-label">連携キー</div>
-                <div class="food-meta">このキーを専用GPTのAPIキー（Bearer）に貼ります。クラウドの復旧コードとは別です。ChatGPTから過去の記録は読めません。</div>
-                <div class="recovery-code" id="inboxKey">作成中…</div>
-                <button class="btn-block" id="inboxCopyKeyBtn">連携キーをコピー</button>
+                <div class="section-label">ChatGPTとの連携</div>
+                <div class="food-meta">このiPhoneに食事を送るための一時コードを発行します。ChatGPTから開くMealLogの認証画面に入力してください。会話には貼らないでください。10分間有効・1回限りです。</div>
+                <div class="recovery-code" id="inboxKey">未発行</div>
+                <button class="btn-block" id="inboxCopyKeyBtn">連携コードを発行</button>
+                <button class="btn-block secondary" id="inboxRevokeBtn" style="margin-top:8px;">ChatGPT連携を解除</button>
             </div>
             <div class="card">
                 <div class="section-label">通知</div>
@@ -369,12 +370,14 @@
                 <div id="inboxMessage" class="food-meta" style="margin-top:6px;"></div>
             </div>
             <div class="card">
-                <div class="section-label">専用GPTの作り方</div>
+                <div class="section-label">ChatGPTへの登録</div>
                 <div class="food-meta">
-                    1. ChatGPTでGPTを作り、指示文を貼る<br>
-                    2. アクションに <b>chatgpt/openapi.yaml</b> を読み込む<br>
-                    3. 認証はAPIキー、ヘッダー <b>Authorization</b>、値は <b>Bearer</b> と上の連携キー<br>
-                    4. そのGPTに「松屋の牛丼大盛り卵付きを昼に追加して」と話す
+                    1. パソコンのChatGPTで設定 → Security and login → Developer modeをオン<br>
+                    2. Pluginsの＋からMealLogを追加。接続URLは下記、認証を選ぶ場合はOAuth<br>
+                    <code style="overflow-wrap:anywhere;">https://meal-tracker-cloud.nest-task-manager.workers.dev/mcp</code><br>
+                    3. 開いたMealLogの認証画面に、このiPhoneで発行したコードを入力して許可<br>
+                    4. 新しい会話でMealLogを選び「松屋の牛丼を昼に追加して」と話す<br>
+                    食事は受け箱に保存され、このアプリを開くと記録に入ります。通知はホーム画面のMealLogから有効にしてください。
                 </div>
                 <button class="btn-block secondary" id="inboxCopyPromptBtn">指示文をコピー</button>
             </div>

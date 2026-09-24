@@ -9,7 +9,8 @@ const Inbox = {
 
     init() {
         this.ensureToken();
-        document.getElementById('inboxCopyKeyBtn')?.addEventListener('click', () => this.copyKey());
+        document.getElementById('inboxCopyKeyBtn')?.addEventListener('click', () => this.createPairingCode());
+        document.getElementById('inboxRevokeBtn')?.addEventListener('click', () => this.revoke());
         document.getElementById('inboxNotifyBtn')?.addEventListener('click', () => this.enableNotifications());
         document.getElementById('inboxTestBtn')?.addEventListener('click', () => this.testConnection());
         document.getElementById('inboxCopyPromptBtn')?.addEventListener('click', () => this.copyPrompt());
@@ -21,6 +22,7 @@ const Inbox = {
         navigator.serviceWorker?.addEventListener('message', event => {
             if (event.data?.type === 'inbox-push') this.pull();
         });
+        setInterval(() => { if (document.visibilityState === 'visible') this.pull(); }, 30000);
     },
 
     apiBase() {
@@ -39,8 +41,6 @@ const Inbox = {
     },
 
     render() {
-        const key = document.getElementById('inboxKey');
-        if (key) key.textContent = this.ensureToken();
         const hint = document.getElementById('inboxNotifyHint');
         if (!hint) return;
         const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -49,19 +49,32 @@ const Inbox = {
         } else if (!standalone) {
             hint.textContent = '通知を受け取るには、このページをホーム画面に追加して、そこから開いてください。';
         } else if (Notification.permission === 'granted') {
-            hint.textContent = '通知はオンです。ChatGPTから届くと音が鳴ります。';
+            hint.textContent = '通知は許可済みです。届かない場合は下のボタンで登録し直してください。音はiPhoneの設定によります。';
         } else {
             hint.textContent = '通知をオンにすると、話した直後に音で知らせます。';
         }
     },
 
-    async copyKey() {
+    async createPairingCode() {
         try {
-            await navigator.clipboard.writeText(this.ensureToken());
-            this.showMessage('連携キーをコピーしました。専用GPTのAPIキー欄に貼ってください。');
+            const response = await fetch(this.apiUrl('/v1/pairing'), { method: 'POST', headers: this.authHeaders() });
+            if (!response.ok) throw new Error('pairing');
+            const { code } = await response.json();
+            document.getElementById('inboxKey').textContent = code;
+            try { await navigator.clipboard.writeText(code); } catch { /* Code remains visible for manual copy. */ }
+            this.showMessage('10分間有効です。ChatGPTから開くMealLogの認証画面に入力してください。会話には貼らないでください。');
         } catch {
-            this.showMessage('コピーできませんでした。表示されたキーを手動で選んでコピーしてください。');
+            this.showMessage('コードを発行できませんでした。通信を確認してもう一度押してください。');
         }
+    },
+
+    async revoke() {
+        try {
+            const response = await fetch(this.apiUrl('/v1/pairing'), { method: 'DELETE', headers: this.authHeaders() });
+            if (!response.ok) throw new Error('revoke');
+            document.getElementById('inboxKey').textContent = '未発行';
+            this.showMessage('ChatGPTからのアクセスを解除しました。再連携するときは新しいコードを発行してください。');
+        } catch { this.showMessage('解除できませんでした。通信を確認してやり直してください。'); }
     },
 
     async enableNotifications() {
@@ -81,7 +94,7 @@ const Inbox = {
             const keyResponse = await fetch(this.apiUrl('/v1/vapid-public-key'), { cache: 'no-store' });
             if (!keyResponse.ok) throw new Error('vapid');
             const { publicKey } = await keyResponse.json();
-            const subscription = await registration.pushManager.subscribe({
+            const subscription = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: base64UrlToBytes(publicKey)
             });
@@ -119,14 +132,13 @@ const Inbox = {
     async copyPrompt() {
         try {
             await navigator.clipboard.writeText(this.promptText());
-            this.showMessage('専用GPTに貼る指示文をコピーしました。');
+            this.showMessage('食事を記録する依頼文をコピーしました。');
         } catch {
             this.showMessage('コピーできませんでした。');
         }
     },
 
     promptText() {
-        const base = this.apiBase();
         return [
             'あなたはMealLogへ外食を記録する係です。',
             'ユーザーが店名とメニューを言ったら、その品のカロリーとPFC（たんぱく質・脂質・炭水化物、単位はg）を調べ、add_meal を呼んで記録してください。',
@@ -134,7 +146,7 @@ const Inbox = {
             '食事スロットの指定がなければ、引数 meal は省略してください。日付の指定がなければ date も省略してください。',
             '量の指定がなければ amount は 1、unit は「食」にしてください。複数品は meals 配列で一度に送ってください。',
             '固定食品マスタには登録しません。記録できたら、品名・kcal・PFCと、どの食事に入れたかを短く返してください。',
-            `受け箱のURLは ${base} です。Authorization は連携時に設定したAPIキーを使ってください。`
+            '栄養値は食べた全量を渡し、amountで再度掛けないでください。同じ送信の再試行は同じrequest_idを使ってください。'
         ].join('\n');
     },
 
@@ -156,8 +168,9 @@ const Inbox = {
             meals.forEach(meal => {
                 if (!meal?.id) return;
                 ackIds.push(meal.id);
-                if (applied.has(meal.id)) return;
+                if (applied.has(meal.id) || storage.getLogsForDate(meal.date).some(entry => entry.id === `inbox-${meal.id}`)) return;
                 const entry = storage.addLogEntry({
+                    id: `inbox-${meal.id}`,
                     foodId: null,
                     name: meal.name,
                     amount: meal.amount,
@@ -174,7 +187,8 @@ const Inbox = {
                 applied.add(meal.id);
             });
             this.saveApplied(applied);
-            await this.ack(ackIds);
+            // A failed acknowledgement must not hide the successful local write/undo action.
+            await this.ack(ackIds).catch(() => {});
             if (!created.length) return;
             if (typeof Main !== 'undefined') Main.renderToday();
             const label = created.length === 1

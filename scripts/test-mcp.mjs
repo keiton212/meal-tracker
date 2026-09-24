@@ -1,0 +1,110 @@
+import assert from 'node:assert/strict';
+import { randomBytes, createHash } from 'node:crypto';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+const base = process.env.MEALLOG_TEST_URL || 'http://localhost:8787';
+if (!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base)) throw new Error('This test writes fixtures; only a local server is allowed.');
+const inboxToken = randomBytes(32).toString('base64url');
+const authHeaders = { Authorization: `Bearer ${inboxToken}`, 'Content-Type': 'application/json' };
+const req = (path, options = {}) => fetch(base + path, options);
+const json = async (response, status = 200) => { assert.equal(response.status, status, await response.clone().text()); return response.json(); };
+let checks = 0;
+const pass = name => { checks++; console.log(`PASS ${name}`); };
+
+let response = await req('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+assert.equal(response.status, 401);
+assert.match(response.headers.get('WWW-Authenticate'), /oauth-protected-resource/);
+pass('MCP rejects unauthenticated writes and advertises discovery');
+const resource = await json(await req('/.well-known/oauth-protected-resource/mcp'));
+assert.equal(resource.resource, base + '/mcp');
+const metadata = await json(await req('/.well-known/oauth-authorization-server'));
+assert(metadata.code_challenge_methods_supported.includes('S256'));
+pass('OAuth discovery, PKCE, and resource audience');
+
+await json(await req('/oauth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_name: 'Untrusted', redirect_uris: ['https://evil.example/callback'], token_endpoint_auth_method: 'none' }) }), 400);
+pass('DCR rejects untrusted redirect');
+const registration = await json(await req('/oauth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_name: 'MealLog test', redirect_uris: ['https://chatgpt.com/connector_platform_oauth_redirect'], token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] }) }), 201);
+const pairing = process.env.MEALLOG_UI_PAIRING_CODE ? { code: process.env.MEALLOG_UI_PAIRING_CODE, expiresIn: 600 } : await json(await req('/v1/pairing', { method: 'POST', headers: authHeaders }));
+assert.equal(pairing.expiresIn, 600);
+
+const verifier = randomBytes(32).toString('base64url');
+const parameters = new URLSearchParams({ client_id: registration.client_id, redirect_uri: registration.redirect_uris[0], response_type: 'code', scope: 'meals:write', state: randomBytes(16).toString('hex'), code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256', resource: base + '/mcp' });
+const authorize = async () => {
+    const res = await req('/oauth/authorize?' + parameters);
+    assert.equal(res.status, 200, await res.clone().text());
+    const html = await res.text();
+    return { session: html.match(/name="session" value="([a-f0-9]+)"/)[1], cookie: res.headers.get('Set-Cookie').split(';')[0] };
+};
+const consent = await authorize();
+const submit = (data, extra = {}) => req('/oauth/authorize', { method: 'POST', redirect: 'manual', headers: { Origin: base, Cookie: consent.cookie, ...extra }, body: new URLSearchParams({ session: consent.session, decision: 'allow', ...data }) });
+assert.equal((await submit({ code: pairing.code }, { Origin: 'https://evil.example' })).status, 403);
+assert.equal((await submit({ code: pairing.code }, { Cookie: '' })).status, 403);
+pass('Consent rejects CSRF and requires explicit browser approval');
+response = await submit({ code: pairing.code });
+assert.equal(response.status, 303, await response.clone().text());
+const redirect = new URL(response.headers.get('Location'));
+assert.equal(redirect.searchParams.get('state'), parameters.get('state'));
+assert.equal(redirect.searchParams.get('iss'), metadata.issuer);
+assert.equal((await submit({ code: pairing.code })).status, 400);
+pass('One-time device pairing and issuer/state-bound callback');
+const tokenParams = { grant_type: 'authorization_code', client_id: registration.client_id, redirect_uri: registration.redirect_uris[0], code: redirect.searchParams.get('code'), code_verifier: verifier, resource: base + '/mcp' };
+const exchange = params => req('/oauth/token', { method: 'POST', body: new URLSearchParams(params) });
+await json(await exchange({ ...tokenParams, resource: 'https://evil.example/mcp' }), 400);
+const tokens = await json(await exchange(tokenParams));
+assert(tokens.access_token && tokens.refresh_token);
+pass('OAuth token exchange and wrong-audience rejection');
+
+const client = new Client({ name: 'MealLog integration test', version: '1.0.0' });
+await client.connect(new StreamableHTTPClientTransport(new URL(base + '/mcp'), { requestInit: { headers: { Authorization: `Bearer ${tokens.access_token}` } } }));
+const list = await client.listTools();
+assert.equal(list.tools.length, 1);
+assert.equal(list.tools[0].name, 'add_meal');
+assert.equal(list.tools[0].annotations.readOnlyHint, false);
+pass('Official MCP client initializes and lists add_meal');
+const args = { request_id: 'test-' + randomBytes(16).toString('hex'), meals: [{ name: '検証用の食事', amount: 1.5, unit: '杯', kcal: 600, p: 25, f: 20, c: 80, note: '推定' }] };
+const added = await client.callTool({ name: 'add_meal', arguments: args });
+assert(!added.isError, JSON.stringify(added));
+const stored = added.structuredContent;
+assert.equal(stored.status, 'queued');
+assert.equal(stored.pushed, false);
+assert.equal(stored.meals[0].kcal, 600);
+assert.equal(stored.meals[0].date, new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date()));
+const again = await client.callTool({ name: 'add_meal', arguments: args });
+assert.equal(again.structuredContent.duplicate, true);
+assert.deepEqual(again.structuredContent.ids, stored.ids);
+const conflict = await client.callTool({ name: 'add_meal', arguments: { ...args, meals: [{ ...args.meals[0], kcal: 999 }] } });
+assert.equal(conflict.isError, true);
+pass('Food totals, Japan date defaults, idempotent retry, conflict rejection');
+if (process.env.MEALLOG_UI_PAIRING_CODE) {
+    await client.close();
+    console.log('Local browser fixture queued. Open MealLog to check one 600 kcal entry, then undo it.');
+    process.exit(0);
+}
+for (const meal of [{ ...args.meals[0], kcal: -1 }, { ...args.meals[0], date: '2026-02-30' }]) {
+    const bad = await client.callTool({ name: 'add_meal', arguments: { request_id: 'bad-' + randomBytes(8).toString('hex'), meals: [meal] } });
+    assert.equal(bad.isError, true);
+}
+pass('Invalid nutrition and impossible dates do not write');
+const pending = await json(await req('/v1/pending', { headers: authHeaders }));
+assert.equal(pending.meals.length, 1);
+const other = await json(await req('/v1/pending', { headers: { Authorization: `Bearer ${randomBytes(32).toString('base64url')}` } }));
+assert.equal(other.meals.length, 0);
+await json(await req('/v1/pending', { method: 'DELETE', headers: authHeaders, body: JSON.stringify({ ids: stored.ids }) }));
+assert.equal((await json(await req('/v1/pending', { headers: authHeaders }))).meals.length, 0);
+pass('Phone inbox retrieval, owner isolation, acknowledgement');
+await json(await req('/v1/subscription', { method: 'PUT', headers: authHeaders, body: JSON.stringify({ endpoint: 'https://evil.example/push', keys: { p256dh: 'x', auth: 'y' } }) }), 400);
+pass('Push endpoint SSRF protection');
+const refreshed = await json(await exchange({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: registration.client_id, resource: base + '/mcp' }));
+assert(refreshed.access_token);
+await json(await req('/v1/pairing', { method: 'DELETE', headers: authHeaders }));
+assert.equal((await req('/mcp', { headers: { Authorization: `Bearer ${refreshed.access_token}` } })).status, 401);
+pass('Refresh tokens and immediate device-side revocation');
+await json(await exchange(tokenParams), 400);
+pass('Authorization code replay rejection');
+await client.close();
+assert.equal((await req('/')).status, 200);
+assert.equal((await req('/api/health')).status, 200);
+await json(await req('/api/sync', { headers: authHeaders }));
+pass('Existing PWA, health, encrypted backup API remain available');
+console.log(`All ${checks} integration checks passed.`);
