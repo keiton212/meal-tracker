@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-tracker-v21';
+const CACHE_NAME = 'meal-tracker-v22';
 const urlsToCache = [
     './',
     './index.html',
@@ -16,12 +16,38 @@ const urlsToCache = [
     './js/export.js',
     './js/cloud-config.js',
     './js/cloud-sync.js',
+    './js/inbox.js',
     './js/backup.js',
     './manifest.json'
 ];
 
 self.addEventListener('message', event => {
     if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
+self.addEventListener('push', event => {
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        windows.forEach(client => client.postMessage({ type: 'inbox-push' }));
+        await self.registration.showNotification('MealLog', {
+            body: 'ChatGPTから食事が届きました',
+            data: { url: './index.html' }
+        });
+    })());
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        const visible = windows.find(client => client.url.includes('index.html'));
+        if (visible) {
+            await visible.focus();
+            visible.postMessage({ type: 'inbox-push' });
+            return;
+        }
+        await self.clients.openWindow('./index.html');
+    })());
 });
 
 self.addEventListener('install', event => {

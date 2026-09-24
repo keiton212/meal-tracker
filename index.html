@@ -187,6 +187,7 @@
             <button class="menu-btn" data-nav="scheduleScreen">📅 PFC設定</button>
             <button class="menu-btn" data-nav="exportScreen">📋 週次まとめをコピー</button>
             <button class="menu-btn" data-nav="backupScreen">💾 データのバックアップ</button>
+            <button class="menu-btn" data-nav="inboxScreen">🎙️ ChatGPT連携</button>
         </div>
     </div>
 
@@ -347,6 +348,39 @@
         </div>
     </div>
 
+    <!-- ChatGPTから外食を受け取る -->
+    <div id="inboxScreen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" data-back="settingsScreen">← 戻る</button>
+            <h2>ChatGPT連携</h2>
+        </div>
+        <div class="content">
+            <div class="card">
+                <div class="section-label">連携キー</div>
+                <div class="food-meta">このキーを専用GPTのAPIキー（Bearer）に貼ります。クラウドの復旧コードとは別です。ChatGPTから過去の記録は読めません。</div>
+                <div class="recovery-code" id="inboxKey">作成中…</div>
+                <button class="btn-block" id="inboxCopyKeyBtn">連携キーをコピー</button>
+            </div>
+            <div class="card">
+                <div class="section-label">通知</div>
+                <div class="food-meta" id="inboxNotifyHint">通知をオンにすると、話した直後に音で知らせます。</div>
+                <button class="btn-block" id="inboxNotifyBtn">通知をオンにする</button>
+                <button class="btn-block secondary" id="inboxTestBtn" style="margin-top:8px;">接続を試す</button>
+                <div id="inboxMessage" class="food-meta" style="margin-top:6px;"></div>
+            </div>
+            <div class="card">
+                <div class="section-label">専用GPTの作り方</div>
+                <div class="food-meta">
+                    1. ChatGPTでGPTを作り、指示文を貼る<br>
+                    2. アクションに <b>chatgpt/openapi.yaml</b> を読み込む<br>
+                    3. 認証はAPIキー、ヘッダー <b>Authorization</b>、値は <b>Bearer</b> と上の連携キー<br>
+                    4. そのGPTに「松屋の牛丼大盛り卵付きを昼に追加して」と話す
+                </div>
+                <button class="btn-block secondary" id="inboxCopyPromptBtn">指示文をコピー</button>
+            </div>
+        </div>
+    </div>
+
     <!-- データが空の状態で起動したときの復元導線（初回起動 or iOSによる消失） -->
     <div id="recoveryOverlay" class="recovery-overlay" hidden>
         <div class="recovery-box">
@@ -383,6 +417,7 @@
     <script src="js/export.js"></script>
     <script src="js/cloud-config.js"></script>
     <script src="js/cloud-sync.js"></script>
+    <script src="js/inbox.js"></script>
     <script src="js/backup.js"></script>
 </body>
 </html>
