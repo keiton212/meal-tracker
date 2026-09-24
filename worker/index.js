@@ -1,3 +1,5 @@
+import { handleInbox } from './inbox.js';
+
 const MAX_ENCRYPTED_PAYLOAD_BYTES = 900_000;
 
 export default {
@@ -5,12 +7,22 @@ export default {
         const url = new URL(request.url);
         const cors = corsHeaders(request, env, url.origin);
 
-        if (request.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
+        if (request.method === 'OPTIONS' && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/v1/'))) {
             return new Response(null, { status: 204, headers: cors });
         }
 
         if (url.pathname === '/api/health' && request.method === 'GET') {
             return json({ ok: true }, 200, cors);
+        }
+
+        if (url.pathname.startsWith('/v1/')) {
+            try {
+                return await handleInbox(request, env, url, cors);
+            } catch (error) {
+                if (isHttpError(error)) return json({ error: error.message }, error.status, cors);
+                console.error('inbox failed', error);
+                return json({ error: 'internal_error' }, 500, cors);
+            }
         }
 
         if (url.pathname === '/api/sync') {
@@ -99,7 +111,7 @@ function corsHeaders(request, env, ownOrigin) {
     const allowed = new Set((env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean));
     allowed.add(ownOrigin);
     const headers = {
-        'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
         'Cache-Control': 'no-store',
@@ -132,6 +144,10 @@ function byteLength(value) {
 async function sha256Hex(value) {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
     return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function isHttpError(error) {
+    return error instanceof HttpError || (Number.isInteger(error?.status) && error.status >= 400 && error.status < 600);
 }
 
 class HttpError extends Error {

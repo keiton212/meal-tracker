@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: MealLog inbox
+  version: "1.0.0"
+  description: 外食のカロリーとPFCをMealLogの受け箱へ追加する
+servers:
+  - url: https://meal-tracker-cloud.nest-task-manager.workers.dev
+paths:
+  /v1/meals:
+    post:
+      operationId: addMeal
+      summary: 食事をMealLogへ追加する
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Meal"
+                - $ref: "#/components/schemas/MealBatch"
+      responses:
+        "200":
+          description: 受け箱に入った
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  ids:
+                    type: array
+                    items:
+                      type: string
+                  pushed:
+                    type: boolean
+        "400":
+          description: 入力が不正
+        "401":
+          description: 連携キーが違う
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Meal:
+      type: object
+      required: [name, kcal, p, f, c]
+      properties:
+        name:
+          type: string
+          description: 店名と品名
+        note:
+          type: string
+          description: 数値の確度が低いときの短い注記
+        meal:
+          type: string
+          description: b1, b2, lunch, snack, dinner。朝①、朝②、昼、間食、夕でもよい。省略時は日本時間の現在スロット
+        date:
+          type: string
+          description: YYYY-MM-DD。省略時は日本時間の今日
+        amount:
+          type: number
+          description: 省略時は1
+        unit:
+          type: string
+          description: 省略時は食
+        kcal:
+          type: number
+        p:
+          type: number
+          description: たんぱく質(g)
+        f:
+          type: number
+          description: 脂質(g)
+        c:
+          type: number
+          description: 炭水化物(g)
+        fiber:
+          type: number
+        salt:
+          type: number
+    MealBatch:
+      type: object
+      required: [meals]
+      properties:
+        meals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Meal"
